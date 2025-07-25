@@ -46,38 +46,58 @@ export const SessionView = ({
   }
 
   useEffect(() => {
-    if (sessionStarted) {
-      const timeout = setTimeout(() => {
-        if (!isAgentAvailable(agentState)) {
-          const reason =
-            agentState === 'connecting'
-              ? 'Agent did not join the room. '
-              : 'Agent connected but did not complete initializing. ';
+  if (!sessionStarted) {
+    return;
+  }
 
-          toastAlert({
-            title: 'Session ended',
-            description: (
-              <p className="w-full">
-                {reason}
-                <a
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  href="https://docs.livekit.io/agents/start/voice-ai/"
-                  className="whitespace-nowrap underline"
-                >
-                  See quickstart guide
-                </a>
-                .
-              </p>
-            ),
-          });
-          room.disconnect();
-        }
-      }, 10_000);
+  // Check for agent presence immediately upon connection and when participants change.
+  const checkAgentPresence = () => {
+    return Array.from(room.remoteParticipants.values()).some((p) => p.isAgent);
+  };
 
-      return () => clearTimeout(timeout);
+  // Initial check
+  if (checkAgentPresence()) {
+    return; // Agent is already here, no need for a timeout.
+  }
+
+  const timeout = setTimeout(() => {
+    if (!checkAgentPresence()) {
+      const reason = 'Agent did not join the room in time.';
+      toastAlert({
+        title: 'Session ended',
+        description: (
+          <p className="w-full">
+            {reason}
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://docs.livekit.io/agents/start/voice-ai/"
+              className="whitespace-nowrap underline"
+            >
+              See quickstart guide
+            </a>
+            .
+          </p>
+        ),
+      });
+      room.disconnect();
     }
-  }, [agentState, sessionStarted, room]);
+  }, 30_000); // 30 second timeout
+
+  // Also check when a participant connects
+  const handleParticipantConnected = () => {
+    if (checkAgentPresence()) {
+      clearTimeout(timeout);
+    }
+  };
+
+  room.on('participantConnected', handleParticipantConnected);
+
+  return () => {
+    clearTimeout(timeout);
+    room.off('participantConnected', handleParticipantConnected);
+  };
+}, [sessionStarted, room]);
 
   const { supportsChatInput, supportsVideoInput, supportsScreenShare } = appConfig;
   const capabilities = {

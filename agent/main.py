@@ -27,6 +27,21 @@ async def entrypoint(ctx: agents.JobContext):
     await ctx.connect()
     logging.info(f"Agent connected to room: {ctx.room.name}")
 
+ # --- START OF NEW LOGGING ---
+    def on_participant_connected(participant: rtc.RemoteParticipant):
+        logging.info(f"Agent saw a participant connect: "
+                     f"identity={participant.identity}, "
+                     f"sid={participant.sid}, "
+                     f"kind={participant.kind}")
+
+    ctx.room.on("participant_connected", on_participant_connected)
+
+    # Also log any participants already in the room
+    for p in ctx.room.remote_participants.values():
+        on_participant_connected(p)
+    # --- END OF NEW LOGGING ---
+
+
     # Keep the agent alive until the job is done
     while True:
         await asyncio.sleep(1)

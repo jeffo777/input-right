@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Room, RoomEvent } from 'livekit-client';
+import { Room, RoomEvent, Participant } from 'livekit-client';
 import { motion } from 'motion/react';
 import { RoomAudioRenderer, RoomContext, StartAudio } from '@livekit/components-react';
 import { toastAlert } from '@/components/alert-toast';
@@ -36,6 +36,18 @@ export function App({ appConfig, livekitUrl, apiUrl }: AppProps) {
         description: `${error.name}: ${error.message}`,
       });
     };
+
+// --- START OF NEW LOGGING ---
+  const onParticipantConnected = (participant: Participant) => {
+      console.log("A participant connected:", {
+          identity: participant.identity,
+          sid: participant.sid,
+          kind: participant.kind,
+          metadata: participant.metadata,
+      });
+  };
+  // --- END OF NEW LOGGING ---
+
     room.on(RoomEvent.MediaDevicesError, onMediaDevicesError);
     room.on(RoomEvent.Disconnected, onDisconnected);
     return () => {
