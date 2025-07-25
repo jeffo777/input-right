@@ -1,37 +1,56 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ConnectionDetails } from '@/app/api/connection-details/route';
 
-export default function useConnectionDetails() {
-  // Generate room connection details, including:
-  //   - A random Room name
-  //   - A random Participant name
-  //   - An Access Token to permit the participant to join the room
-  //   - The URL of the LiveKit server to connect to
-  //
-  // In real-world application, you would likely allow the user to specify their
-  // own participant name, and possibly to choose from existing rooms to join.
+ export type ConnectionDetails = {
+   serverUrl: string;
+   roomName: string;
+   participantName: string;
+   participantToken: string;
+ };
 
-  const [connectionDetails, setConnectionDetails] = useState<ConnectionDetails | null>(null);
+ export default function useConnectionDetails() {
+   const [connectionDetails, setConnectionDetails] = useState<ConnectionDetails | null>(null);
 
-  const fetchConnectionDetails = useCallback(() => {
-    setConnectionDetails(null);
-    const url = new URL(
-      process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT ?? '/api/connection-details',
-      window.location.origin
-    );
-    fetch(url.toString())
-      .then((res) => res.json())
-      .then((data) => {
-        setConnectionDetails(data);
-      })
-      .catch((error) => {
-        console.error('Error fetching connection details:', error);
-      });
-  }, []);
+   const fetchConnectionDetails = useCallback(() => {
+     setConnectionDetails(null);
+     const getDetails = async () => {
+       try {
+         // --- START OF HARDCODED VALUES ---
+         const contractorId = "bob-the-builder-123";
+         const apiUrl = "http://127.0.0.1:8001"; // Our Python backend
+         const livekitUrl = "wss://contractor-leads-bot-d8djm77w.livekit.cloud"; // Your LiveKit URL
+         // --- END OF HARDCODED VALUES ---
 
-  useEffect(() => {
-    fetchConnectionDetails();
-  }, [fetchConnectionDetails]);
+         const resp = await fetch(`${apiUrl}/api/token`, {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({ contractor_id: contractorId }),
+         });
 
-  return { connectionDetails, refreshConnectionDetails: fetchConnectionDetails };
-}
+         if (!resp.ok) {
+             const errorBody = await resp.text();
+             throw new Error(`Failed to fetch token: ${resp.statusText}. Body: ${errorBody}`);
+         }
+
+         const data = await resp.json();
+
+         const details: ConnectionDetails = {
+           serverUrl: livekitUrl,
+           roomName: contractorId,
+           participantName: 'Website Visitor',
+           participantToken: data.token,
+         };
+         setConnectionDetails(details);
+
+       } catch (error) {
+         console.error('Error fetching connection details:', error);
+       }
+     };
+     getDetails();
+   }, []);
+
+   useEffect(() => {
+     fetchConnectionDetails();
+   }, [fetchConnectionDetails]);
+
+   return { connectionDetails, refreshConnectionDetails: fetchConnectionDetails };
+ }

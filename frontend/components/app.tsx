@@ -16,12 +16,14 @@ const MotionSessionView = motion.create(SessionView);
 
 interface AppProps {
   appConfig: AppConfig;
+  livekitUrl?: string;
+  apiUrl?: string;
 }
 
-export function App({ appConfig }: AppProps) {
+export function App({ appConfig, livekitUrl, apiUrl }: AppProps) {
   const room = useMemo(() => new Room(), []);
   const [sessionStarted, setSessionStarted] = useState(false);
-  const { connectionDetails, refreshConnectionDetails } = useConnectionDetails();
+  const { connectionDetails, refreshConnectionDetails } = useConnectionDetails({ livekitUrl, apiUrl });
 
   useEffect(() => {
     const onDisconnected = () => {
@@ -45,32 +47,20 @@ export function App({ appConfig }: AppProps) {
   useEffect(() => {
     let aborted = false;
     if (sessionStarted && room.state === 'disconnected' && connectionDetails) {
-      Promise.all([
-        room.localParticipant.setMicrophoneEnabled(true, undefined, {
-          preConnectBuffer: appConfig.isPreConnectBufferEnabled,
-        }),
-        room.connect(connectionDetails.serverUrl, connectionDetails.participantToken),
-      ]).catch((error) => {
-        if (aborted) {
-          // Once the effect has cleaned up after itself, drop any errors
-          //
-          // These errors are likely caused by this effect rerunning rapidly,
-          // resulting in a previous run `disconnect` running in parallel with
-          // a current run `connect`
-          return;
-        }
-
-        toastAlert({
-          title: 'There was an error connecting to the agent',
-          description: `${error.name}: ${error.message}`,
+      room.connect(connectionDetails.serverUrl, connectionDetails.participantToken)
+        .catch((error) => {
+          if (aborted) { return; }
+          toastAlert({
+            title: 'There was an error connecting to the agent',
+            description: `${error.name}: ${error.message}`,
+          });
         });
-      });
     }
     return () => {
       aborted = true;
       room.disconnect();
     };
-  }, [room, sessionStarted, connectionDetails, appConfig.isPreConnectBufferEnabled]);
+  }, [room, sessionStarted, connectionDetails]);
 
   const { startButtonText } = appConfig;
 
@@ -80,7 +70,7 @@ export function App({ appConfig }: AppProps) {
         key="welcome"
         startButtonText={startButtonText}
         onStartCall={() => setSessionStarted(true)}
-        disabled={sessionStarted}
+        disabled={sessionStarted || !connectionDetails}
         initial={{ opacity: 0 }}
         animate={{ opacity: sessionStarted ? 0 : 1 }}
         transition={{ duration: 0.5, ease: 'linear', delay: sessionStarted ? 0 : 0.5 }}
@@ -89,7 +79,6 @@ export function App({ appConfig }: AppProps) {
       <RoomContext.Provider value={room}>
         <RoomAudioRenderer />
         <StartAudio label="Start Audio" />
-        {/* --- */}
         <MotionSessionView
           key="session-view"
           appConfig={appConfig}

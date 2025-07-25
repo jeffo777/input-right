@@ -6,5 +6,9 @@ export default async function Page() {
   const hdrs = await headers();
   const appConfig = await getAppConfig(hdrs);
 
-  return <App appConfig={appConfig} />;
+  // Correctly read the environment variables on the server side
+  const livekitUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  return <App appConfig={appConfig} livekitUrl={livekitUrl} apiUrl={apiUrl} />;
 }
