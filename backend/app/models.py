@@ -7,9 +7,9 @@ from sqlalchemy import (
     String,
     DateTime,
     Text,
+    ForeignKey,
 )
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel
 
 # Synchronous Database URL for Alembic
 DATABASE_URL = "postgresql+psycopg2://postgres:Theonly***4me@localhost/contractor_leads_bot_db"
@@ -20,7 +20,7 @@ metadata = MetaData()
 contractors = Table(
     "contractors",
     metadata,
-    Column("id", Integer, primary_key=True),
+    Column("id", String(255), primary_key=True),
     Column("business_name", String(255), nullable=False),
     Column("contact_name", String(255)),
     Column("phone_number", String(50)),
@@ -34,7 +34,7 @@ leads = Table(
     "leads",
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("contractor_id", Integer, nullable=False),
+    Column("contractor_id", String(255), ForeignKey("contractors.id"), nullable=False),
     Column("visitor_name", String(255)),
     Column("visitor_phone", String(50)),
     Column("visitor_email", String(255)),
@@ -43,19 +43,19 @@ leads = Table(
     Column("captured_at", DateTime, default=datetime.datetime.utcnow),
 )
 
-# Pydantic Models (for API data validation)
+# Pydantic Models
 class LeadBase(BaseModel):
-    visitor_name: Optional[str] = None
-    visitor_phone: Optional[str] = None
-    visitor_email: Optional[str] = None
+    visitor_name: str | None = None
+    visitor_phone: str | None = None
+    visitor_email: str | None = None
     inquiry: str
 
 class LeadCreate(LeadBase):
-    contractor_id: int
+    contractor_id: str
 
 class Lead(LeadBase):
     id: int
-    contractor_id: int
+    contractor_id: str
     status: str
     captured_at: datetime.datetime
 
@@ -64,16 +64,16 @@ class Lead(LeadBase):
 
 class ContractorBase(BaseModel):
     business_name: str
-    contact_name: Optional[str] = None
-    phone_number: Optional[str] = None
-    email: Optional[str] = None
-    knowledge_base: Optional[str] = None
+    contact_name: str | None = None
+    phone_number: str | None = None
+    email: str | None = None
+    knowledge_base: str | None = None
 
 class ContractorCreate(ContractorBase):
-    pass
+    id: str
 
 class Contractor(ContractorBase):
-    id: int
+    id: str
     created_at: datetime.datetime
 
     class Config:

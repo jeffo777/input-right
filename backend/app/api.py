@@ -75,7 +75,7 @@ async def create_contractor(
     dependencies=[Depends(security.get_api_key)]
 )
 async def get_contractor_profile(
-    contractor_id: int,
+    contractor_id: str,
     database: AsyncSession = Depends(db.get_db)
 ):
     """Fetches contractor-specific data from the database."""

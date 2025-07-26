@@ -1,11 +1,38 @@
 
+import aiohttp
+from livekit.agents import Agent, AgentSession
+from dotenv import load_dotenv
+
 import asyncio
 import logging
+import os
 from livekit import agents, rtc
 from livekit.agents import JobRequest
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%Y-%m-%d %H:%M:%S - %(levelname)s - %(message)s')
+load_dotenv()
+INTERNAL_API_URL = os.getenv("INTERNAL_API_URL")
+INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY")
+
+class ContractorAgent(agents.Agent):
+    def __init__(self, contractor_profile: dict):
+        super().__init__()
+        instructions = (
+            f"You are a friendly and helpful digital receptionist for {contractor_profile['business_name']}. "
+            f"Your goal is to answer questions and capture new customer leads. "
+            f"Use the following information to answer questions: {contractor_profile['knowledge_base']}"
+        )
+        self.update_instructions(instructions)
+
+async def fetch_contractor_profile(session: aiohttp.ClientSession, contractor_id: str) -> dict:
+    url = f"{INTERNAL_API_URL}/api/internal/contractors/{contractor_id}"
+    headers = {"Authorization": INTERNAL_API_KEY}
+    async with session.get(url, headers=headers) as response:
+        if response.status != 200:
+            logging.error(f"Failed to fetch contractor profile: {response.status}")
+            raise Exception(f"Contractor not found: {contractor_id}")
+        return await response.json()
 
 async def request_fnc(req: JobRequest):
     """
@@ -18,33 +45,26 @@ async def request_fnc(req: JobRequest):
 )
 
 async def entrypoint(ctx: agents.JobContext):
-    """
-    This is the entrypoint for our agent job.
-    It's called when a new visitor joins a room.
-    """
     logging.info(f"Agent received job: {ctx.job.id} for room {ctx.room.name}")
     
-    await ctx.connect()
-    logging.info(f"Agent connected to room: {ctx.room.name}")
+    contractor_id = ctx.room.name
+    
+    try:
+        async with aiohttp.ClientSession() as http_session:
+            profile = await fetch_contractor_profile(http_session, contractor_id)
+    except Exception as e:
+        logging.error(f"Could not start agent session, failed to get profile: {e}")
+        return
 
- # --- START OF NEW LOGGING ---
-    def on_participant_connected(participant: rtc.RemoteParticipant):
-        logging.info(f"Agent saw a participant connect: "
-                     f"identity={participant.identity}, "
-                     f"sid={participant.sid}, "
-                     f"kind={participant.kind}")
+    stt = google.STT()
+    tts = google.TTS()
+    llm = google.LLM()
 
-    ctx.room.on("participant_connected", on_participant_connected)
-
-    # Also log any participants already in the room
-    for p in ctx.room.remote_participants.values():
-        on_participant_connected(p)
-    # --- END OF NEW LOGGING ---
-
-
-    # Keep the agent alive until the job is done
-    while True:
-        await asyncio.sleep(1)
+    session = agents.AgentSession(stt=stt, llm=llm, tts=tts)
+    agent = ContractorAgent(profile)
+    
+    await session.start(ctx.room, agent=agent)
+    await session.say(f"Thank you for calling {profile['business_name']}. How can I help you today?", allow_interruptions=True)
 
 
 if __name__ == "__main__":
