@@ -1,29 +1,31 @@
-
-import aiohttp
-from livekit.agents import Agent, AgentSession
-from dotenv import load_dotenv
-
 import asyncio
 import logging
 import os
-from livekit import agents, rtc
+import aiohttp
+from dotenv import load_dotenv
+
+# Load environment variables *before* they are used
+load_dotenv()
+
+from livekit import agents
 from livekit.agents import JobRequest
+from livekit.plugins import deepgram, cartesia, google
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%Y-%m-%d %H:%M:%S - %(levelname)s - %(message)s')
-load_dotenv()
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 INTERNAL_API_URL = os.getenv("INTERNAL_API_URL")
 INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY")
 
+# This is the NEW, correct code
 class ContractorAgent(agents.Agent):
     def __init__(self, contractor_profile: dict):
-        super().__init__()
         instructions = (
             f"You are a friendly and helpful digital receptionist for {contractor_profile['business_name']}. "
             f"Your goal is to answer questions and capture new customer leads. "
             f"Use the following information to answer questions: {contractor_profile['knowledge_base']}"
         )
-        self.update_instructions(instructions)
+        super().__init__(instructions=instructions)
 
 async def fetch_contractor_profile(session: aiohttp.ClientSession, contractor_id: str) -> dict:
     url = f"{INTERNAL_API_URL}/api/internal/contractors/{contractor_id}"
@@ -33,16 +35,6 @@ async def fetch_contractor_profile(session: aiohttp.ClientSession, contractor_id
             logging.error(f"Failed to fetch contractor profile: {response.status}")
             raise Exception(f"Contractor not found: {contractor_id}")
         return await response.json()
-
-async def request_fnc(req: JobRequest):
-    """
-    This function is called when a new job is requested.
-    We accept the job and set the agent's identity and kind.
-    """
-    logging.info(f"Accepting job {req.job.id}")
-    await req.accept(
-    identity="contractor-leads-bot-agent", # A consistent identity for our agent
-)
 
 async def entrypoint(ctx: agents.JobContext):
     logging.info(f"Agent received job: {ctx.job.id} for room {ctx.room.name}")
@@ -56,16 +48,20 @@ async def entrypoint(ctx: agents.JobContext):
         logging.error(f"Could not start agent session, failed to get profile: {e}")
         return
 
-    stt = google.STT()
-    tts = google.TTS()
-    llm = google.LLM()
+    stt = deepgram.STT()
+    tts = cartesia.TTS()
+    llm = google.LLM(model="gemini-1.5-flash-latest")
 
     session = agents.AgentSession(stt=stt, llm=llm, tts=tts)
     agent = ContractorAgent(profile)
     
-    await session.start(ctx.room, agent=agent)
+    # This is the NEW, correct code
+    await session.start(room=ctx.room, agent=agent)
     await session.say(f"Thank you for calling {profile['business_name']}. How can I help you today?", allow_interruptions=True)
 
+async def request_fnc(req: JobRequest):
+    logging.info(f"Accepting job {req.job.id}")
+    await req.accept(identity="contractor-leads-bot-agent")
 
 if __name__ == "__main__":
     logging.info("Starting Contractor Leads Bot Agent Worker...")
