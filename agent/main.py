@@ -9,7 +9,7 @@ load_dotenv()
 
 from livekit import agents
 from livekit.agents import JobRequest
-from livekit.plugins import deepgram, cartesia, google
+from livekit.plugins import deepgram, cartesia, google, silero
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -52,7 +52,8 @@ async def entrypoint(ctx: agents.JobContext):
     tts = cartesia.TTS()
     llm = google.LLM(model="gemini-1.5-flash-latest")
 
-    session = agents.AgentSession(stt=stt, llm=llm, tts=tts)
+    vad = silero.VAD.load()
+    session = agents.AgentSession(stt=stt, llm=llm, tts=tts, vad=vad)
     agent = ContractorAgent(profile)
     
     # This is the NEW, correct code
