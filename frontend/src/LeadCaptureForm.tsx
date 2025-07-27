@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react'; // Add useEffect here
+import React, { useState, useEffect } from 'react';
 
-// Define the structure of the lead data
 export interface LeadData {
   name: string;
   inquiry: string;
@@ -8,35 +7,31 @@ export interface LeadData {
 }
 
 interface LeadCaptureFormProps {
-  initialData: any; 
+  initialData: any;
   onSubmit: (data: LeadData) => void;
   onCancel: () => void;
 }
 
 export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ initialData, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState<LeadData>({
-      name: initialData.name || '',
-      inquiry: initialData.inquiry || '',
-      contactDetail: initialData.contact_detail || ''
+      name: '',
+      inquiry: '',
+      contactDetail: ''
   });
 
-  // --- START OF NEW CODE TO ADD ---
-  // This useEffect hook will run whenever the 'initialData' prop changes.
+  // This hook now correctly populates the state from the prop
   useEffect(() => {
-    // When new initialData arrives, update the form's internal state.
     setFormData({
       name: initialData.name || '',
       inquiry: initialData.inquiry || '',
-      contactDetail: initialData.contact_detail || ''
+      contactDetail: initialData.contact_detail || '' // Read from snake_case
     });
-  }, [initialData]); // The hook's dependency array - it re-runs when initialData changes.
-  // --- END OF NEW CODE TO ADD ---
+  }, [initialData]);
 
+  // This handler is now simplified and works for all fields
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
-    // Note: We need to use the correct key 'contactDetail' for the state
-    const key = id === 'contact_detail' ? 'contactDetail' : id;
-    setFormData((prevData) => ({ ...prevData, [key]: value }));
+    setFormData((prevData) => ({ ...prevData, [id]: value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
