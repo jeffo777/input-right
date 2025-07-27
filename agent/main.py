@@ -9,9 +9,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from livekit import agents
-from livekit.agents import JobRequest, function_tool, get_job_context 
+from livekit.agents import JobRequest, function_tool, get_job_context
 from livekit import rtc
-from livekit.plugins import deepgram, cartesia, groq, silero
+from livekit.plugins import deepgram, groq, silero
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -22,15 +22,19 @@ INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY")
 class ContractorAgent(agents.Agent):
     def __init__(self, contractor_profile: dict):
         instructions = (
-            f"You are a friendly and helpful digital receptionist for {contractor_profile['business_name']}. "
-            f"Your primary goal is to answer the user's questions based on the business information provided. "
-            f"Your secondary goal is to capture new customer leads, but ONLY if the user expresses a desire to be contacted. "
-            f"If the user asks for a quote, a callback, or a service visit, that is your cue to collect their information. "
-            f"Once you have naturally collected the user's name, their specific inquiry, and a contact detail (phone or email), "
-            f"you MUST call the `present_verification_form` tool. Do not ask for the information again if you already have it, just call the tool. "
-            f"If the user is just asking questions, simply answer them and remain helpful. Do not push to capture their details. "
-            f"Business Information: {contractor_profile['knowledge_base']}"
-        )
+    f"You are a friendly and helpful digital receptionist for {contractor_profile['business_name']}. "
+    f"Your primary goal is to answer the user's questions based on the business information provided. "
+    f"Your secondary goal is to capture new customer leads, but ONLY if the user expresses a desire to be contacted. "
+    f"If the user asks for a quote, a callback, or a service visit, that is your cue to collect their information. "
+    f"Once you have naturally collected the user's name, their specific inquiry, and a contact detail (phone or email), "
+    f"you MUST call the `present_verification_form` tool. "
+    f"After you call the tool and receive the confirmation message 'The verification form was successfully displayed to the user.', "
+    f"your next response MUST be to instruct the user to check the details on the form and click the send button if they are correct. "
+    f"Also, let them know they can either edit the form directly or tell you if they want to make any changes. "
+    f"If the user asks you to change any of the details while the form is displayed, you MUST call the `present_verification_form` tool again with the updated information. "
+    f"If the user is just asking questions, simply answer them and remain helpful. Do not push to capture their details. "
+    f"Business Information: {contractor_profile['knowledge_base']}"
+)
         super().__init__(instructions=instructions)
 
     @function_tool()
@@ -44,7 +48,7 @@ class ContractorAgent(agents.Agent):
             contact_detail (str): The user's phone number or email address.
         """
         logging.info(f"LLM triggered present_verification_form with: {name}, {inquiry}, {contact_detail}")
-        
+
         ctx = get_job_context()
         room = ctx.room
 
@@ -67,10 +71,10 @@ class ContractorAgent(agents.Agent):
                 payload=json.dumps(payload)
             )
             logging.info(f"Successfully sent RPC to {visitor_participant.identity}")
-            return None
+            return "The verification form was successfully displayed to the user."
         except Exception as e:
             logging.error(f"Failed to send RPC: {e}")
-            return f"Error: Failed to display the form to the user due to an internal error: {e}"
+            return "Error: There was a technical problem displaying the form to the user."
 
     async def _submit_lead_form_handler(self, data: rtc.RpcInvocationData):
         """This is the handler for the RPC call from the frontend."""
@@ -106,9 +110,9 @@ async def fetch_contractor_profile(session: aiohttp.ClientSession, contractor_id
 
 async def entrypoint(ctx: agents.JobContext):
     logging.info(f"Agent received job: {ctx.job.id} for room {ctx.room.name}")
-    
+
     contractor_id = ctx.room.name
-    
+
     try:
         async with aiohttp.ClientSession() as http_session:
             profile = await fetch_contractor_profile(http_session, contractor_id)
@@ -117,13 +121,13 @@ async def entrypoint(ctx: agents.JobContext):
         return
 
     stt = deepgram.STT()
-    tts = cartesia.TTS()
+    tts = tts = deepgram.TTS(model="aura-asteria-en")
     llm = groq.LLM(model="llama-3.3-70b-versatile")
     vad = silero.VAD.load()
 
     session = agents.AgentSession(stt=stt, llm=llm, tts=tts, vad=vad)
     agent = ContractorAgent(profile)
-    
+
     await session.start(room=ctx.room, agent=agent)
 
     # Register the RPC handler after the session has started
@@ -139,7 +143,7 @@ async def request_fnc(req: JobRequest):
 
 if __name__ == "__main__":
     logging.info("Starting Contractor Leads Bot Agent Worker...")
-    
+
     agents.cli.run_app(
         agents.WorkerOptions(
             request_fnc=request_fnc,
