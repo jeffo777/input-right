@@ -30,45 +30,44 @@ const [isFormVisible, setIsFormVisible] = useState(false);
 const [leadData, setLeadData] = useState(null);
 
 const handleFormSubmit = async (data: any) => {
+  // Replaced logging.info with console.log
   console.log('Form submitted with data:', data);
-  if (!room) return;
-
-  // Find the agent participant in the room
-  const agentParticipant = Array.from(room.remoteParticipants.values()).find(
-    (p) => p.identity === 'contractor-leads-bot-agent'
-  );
-
-  if (agentParticipant) {
-    try {
-      // Send the RPC command 'submit_lead_form' to the agent
-      await room.localParticipant.publishData(
-        new TextEncoder().encode(JSON.stringify(data)),
-        {
-          destinationIdentities: [agentParticipant.identity],
-          topic: 'submit_lead_form',
-          reliable: true,
-        }
-      );
-      console.log('Successfully sent submit_lead_form RPC to agent');
-    } catch (e) {
-      console.error('Failed to send RPC to agent:', e);
-      toastAlert({
-        title: 'Error',
-        description: 'Could not send your information. Please try again.',
-      });
-    }
-  } else {
-    console.error('Could not find agent participant to send RPC to.');
-    toastAlert({
-        title: 'Error',
-        description: 'Could not find the agent. Please try again.',
-      });
+  if (!room || !room.localParticipant) {
+    // Replaced logging.error with console.error
+    console.error("Room or local participant not available for RPC.");
+    return;
   }
+
+  try {
+  const payload = JSON.stringify(data);
+  console.log("Attempting to send submit_lead_form RPC with payload:", payload);
+  
+  // This is the corrected RPC call with the proper object structure
+  await room.localParticipant.performRpc({
+    destinationIdentity: "contractor-leads-bot-agent",
+    method: "submit_lead_form",
+    payload: payload,
+  });
+
+  console.log('Successfully sent submit_lead_form RPC to agent');
+  toastAlert({
+    title: 'Sent!',
+    description: 'Your information has been sent to the team.',
+  });
+} catch (e) {
+  // Replaced logging.error with console.error
+  console.error('Failed to send RPC to agent:', e);
+  toastAlert({
+    title: 'Error',
+    description: 'Could not send your information. Please try again.',
+  });
+}
 
   // Hide the form and clear the data after submission
   setIsFormVisible(false);
   setLeadData(null);
 };
+
 
 const handleFormCancel = () => {
   console.log('Form cancelled');

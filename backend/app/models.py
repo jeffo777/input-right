@@ -9,7 +9,7 @@ from sqlalchemy import (
     Text,
     ForeignKey,
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 # Synchronous Database URL for Alembic
 DATABASE_URL = "postgresql+psycopg2://postgres:Theonly***4me@localhost/contractor_leads_bot_db"
@@ -46,8 +46,8 @@ leads = Table(
 # Pydantic Models
 class LeadBase(BaseModel):
     visitor_name: str | None = None
-    visitor_phone: str | None = None
-    visitor_email: str | None = None
+    visitor_email: EmailStr  # Email is now required and validated
+    visitor_phone: str | None = None # Phone is now optional
     inquiry: str
 
 class LeadCreate(LeadBase):

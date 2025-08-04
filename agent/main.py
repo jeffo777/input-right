@@ -9,9 +9,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from livekit import agents
+# This is the corrected import path for the event and state enum
 from livekit.agents import JobRequest, function_tool, get_job_context
 from livekit import rtc
 from livekit.plugins import deepgram, groq, silero
+from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -22,32 +24,36 @@ INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY")
 class ContractorAgent(agents.Agent):
     def __init__(self, contractor_profile: dict):
         instructions = (
-    f"You are a friendly and helpful digital receptionist for {contractor_profile['business_name']}. "
-    f"Your primary goal is to answer the user's questions based on the business information provided. "
-    f"Your secondary goal is to capture new customer leads, but ONLY if the user expresses a desire to be contacted. "
-    f"If the user asks for a quote, a callback, or a service visit, that is your cue to collect their information. "
-    f"Once you have naturally collected the user's name, their specific inquiry, and a contact detail (phone or email), "
-    f"you MUST call the `present_verification_form` tool. "
-    f"After you call the tool and receive the confirmation message 'The verification form was successfully displayed to the user.', "
-    f"your next response MUST be to instruct the user to check the details on the form and click the send button if they are correct. "
-    f"Also, let them know they can either edit the form directly or tell you if they want to make any changes. "
-    f"If the user asks you to change any of the details while the form is displayed, you MUST call the `present_verification_form` tool again with the updated information. "
-    f"If the user is just asking questions, simply answer them and remain helpful. Do not push to capture their details. "
-    f"Business Information: {contractor_profile['knowledge_base']}"
-)
+            f"You are a friendly and helpful digital receptionist for {contractor_profile['business_name']}. "
+            f"Your primary goal is to answer the user's questions based on the business information provided. "
+            f"Your secondary goal is to capture new customer leads, but ONLY if the user expresses a desire to be contacted. "
+            f"If the user asks for a quote, a callback, or a service visit, that is your cue to collect their information. "
+            f"You must collect their name, their specific inquiry, and their email address. A phone number is optional, but you can ask for it if it seems appropriate. "
+            f"Once you have naturally collected the user's name, their inquiry, and their email address, "
+            f"you MUST call the `present_verification_form` tool. "
+            f"After you call the tool and receive the confirmation message 'The verification form was successfully displayed to the user.', "
+            f"your next response MUST be to instruct the user to check the details on the form and click the send button if they are correct. "
+            f"Also, let them know they can either edit the form directly or tell you if they want to make any changes. "
+            f"If the user asks you to change any of the details while the form is displayed, you MUST call the `present_verification_form` tool again with the updated information. "
+            f"If the user is just asking questions, simply answer them and remain helpful. Do not push to capture their details. "
+            f"Business Information: {contractor_profile['knowledge_base']}"
+        )
         super().__init__(instructions=instructions)
+        # This flag tracks if the form is active on the user's screen
+        self._is_form_displayed = False
 
     @function_tool()
-    async def present_verification_form(self, name: str, inquiry: str, contact_detail: str):
+    async def present_verification_form(self, name: str, inquiry: str, email: str, phone: str | None = None):
         """
-        Call this tool ONLY when the user has asked to be contacted and you have collected their name, inquiry, and contact detail.
+        Call this tool ONLY when the user has asked to be contacted and you have collected their name, inquiry, and email address.
         This tool will display a form on the user's screen for them to verify their information.
         Args:
             name (str): The full name of the user.
             inquiry (str): A summary of what the user is asking for (e.g., 'quote for a leaky pipe').
-            contact_detail (str): The user's phone number or email address.
+            email (str): The user's email address. This is required.
+            phone (str, optional): The user's phone number. This is optional.
         """
-        logging.info(f"LLM triggered present_verification_form with: {name}, {inquiry}, {contact_detail}")
+        logging.info(f"LLM triggered present_verification_form with: name='{name}', inquiry='{inquiry}', email='{email}', phone='{phone}'")
 
         ctx = get_job_context()
         room = ctx.room
@@ -62,7 +68,8 @@ class ContractorAgent(agents.Agent):
         payload = {
             "name": name,
             "inquiry": inquiry,
-            "contact_detail": contact_detail,
+            "email": email,
+            "phone": phone,
         }
         try:
             await room.local_participant.perform_rpc(
@@ -71,33 +78,11 @@ class ContractorAgent(agents.Agent):
                 payload=json.dumps(payload)
             )
             logging.info(f"Successfully sent RPC to {visitor_participant.identity}")
+            self._is_form_displayed = True # Set the flag to True
             return "The verification form was successfully displayed to the user."
         except Exception as e:
             logging.error(f"Failed to send RPC: {e}")
             return "Error: There was a technical problem displaying the form to the user."
-
-    async def _submit_lead_form_handler(self, data: rtc.RpcInvocationData):
-        """This is the handler for the RPC call from the frontend."""
-        logging.info(f"Agent received submit_lead_form RPC with payload: {data.payload}")
-        try:
-            lead_data = json.loads(data.payload)
-
-            async with aiohttp.ClientSession() as http_session:
-                url = f"{INTERNAL_API_URL}/api/internal/leads"
-                headers = {"Authorization": INTERNAL_API_KEY}
-                async with http_session.post(url, headers=headers, json=lead_data) as response:
-                    if response.status == 201:
-                        logging.info("Successfully saved lead to the database.")
-                        await self.session.generate_reply(
-                            instructions="The user's information has been successfully saved. Thank them and ask if there is anything else you can help with."
-                        )
-                    else:
-                        logging.error(f"Failed to save lead. Status: {response.status}, Body: {await response.text()}")
-                        await self.session.say("I'm sorry, there was an error saving your information. Please try again in a moment.")
-
-        except Exception as e:
-            logging.error(f"Error processing submit_lead_form RPC: {e}")
-            await self.session.say("I'm sorry, a technical error occurred. Please try again.")
 
 async def fetch_contractor_profile(session: aiohttp.ClientSession, contractor_id: str) -> dict:
     url = f"{INTERNAL_API_URL}/api/internal/contractors/{contractor_id}"
@@ -110,32 +95,91 @@ async def fetch_contractor_profile(session: aiohttp.ClientSession, contractor_id
 
 async def entrypoint(ctx: agents.JobContext):
     logging.info(f"Agent received job: {ctx.job.id} for room {ctx.room.name}")
+    
+    # This event will signal when the main loop should exit
+    session_ended = asyncio.Event()
 
-    contractor_id = ctx.room.name
-
-    try:
-        async with aiohttp.ClientSession() as http_session:
+    async with aiohttp.ClientSession() as http_session:
+        try:
+            contractor_id = ctx.room.name
             profile = await fetch_contractor_profile(http_session, contractor_id)
-    except Exception as e:
-        logging.error(f"Could not start agent session, failed to get profile: {e}")
-        return
 
-    stt = deepgram.STT()
-    tts = tts = deepgram.TTS(model="aura-asteria-en")
-    llm = groq.LLM(model="llama-3.3-70b-versatile")
-    vad = silero.VAD.load()
+            await ctx.connect()
+            logging.info("Agent connected to the room.")
 
-    session = agents.AgentSession(stt=stt, llm=llm, tts=tts, vad=vad)
-    agent = ContractorAgent(profile)
+        except Exception as e:
+            logging.error(f"Could not start agent session during setup: {e}")
+            ctx.shutdown()
+            return
 
-    await session.start(room=ctx.room, agent=agent)
+        stt = deepgram.STT()
+        tts = deepgram.TTS(model="aura-asteria-en")
+        llm = groq.LLM(model="llama-3.3-70b-versatile")
+        vad = silero.VAD.load()
+        turn = MultilingualModel()
 
-    # Register the RPC handler after the session has started
-    ctx.room.local_participant.register_rpc_method(
-        "submit_lead_form", agent._submit_lead_form_handler
-    )
+        session = agents.AgentSession(stt=stt, llm=llm, tts=tts, vad=vad, turn_detection=turn)
+        agent = ContractorAgent(profile)
 
-    await session.say(f"Thank you for calling {profile['business_name']}. How can I help you today?", allow_interruptions=True)
+        async def submit_lead_form_handler(data: rtc.RpcInvocationData):
+            logging.info(f"Agent received submit_lead_form RPC with payload: {data.payload}")
+            try:
+                agent._is_form_displayed = False # Reset the flag
+                frontend_data = json.loads(data.payload)
+                backend_payload = {
+                    "contractor_id": ctx.room.name,
+                    "visitor_name": frontend_data.get("name"),
+                    "inquiry": frontend_data.get("inquiry"),
+                    "visitor_email": frontend_data.get("email"),
+                    "visitor_phone": frontend_data.get("phone"),
+                }
+
+                url = f"{INTERNAL_API_URL}/api/internal/leads"
+                headers = {"Authorization": INTERNAL_API_KEY}
+                async with http_session.post(url, headers=headers, json=backend_payload) as response:
+                    if response.status == 201:
+                        logging.info("Successfully saved lead to the database.")
+                        # Use .say() for a direct, non-reply statement
+                        await session.say(
+                            "Thank you. Your information has been sent. Was there anything else I can help you with today?",
+                            allow_interruptions=True
+                        )
+                    else:
+                        logging.error(f"Failed to save lead. Status: {response.status}, Body: {await response.text()}")
+                        await session.say("I'm sorry, there was an error saving your information. Please try again in a moment.")
+
+            except Exception as e:
+                logging.error(f"Error processing submit_lead_form RPC: {e}")
+                await session.say("I'm sorry, a technical error occurred. Please try again.")
+
+        @ctx.room.on("participant_disconnected")
+        def on_participant_disconnected(participant):
+            logging.info(f"Participant disconnected: {participant.identity}, closing session.")
+            session_ended.set()
+
+        @session.on("user_state_changed")
+        def on_user_state_changed(ev: agents.UserStateChangedEvent):
+            if ev.new_state == "away" and agent._is_form_displayed:
+                logging.info("User is viewing the form, ignoring away state to prevent session timeout.")
+                return
+
+            if ev.new_state == "away":
+                logging.info("User is away and no form is displayed, closing session.")
+                session_ended.set()
+
+        await session.start(room=ctx.room, agent=agent)
+
+        ctx.room.local_participant.register_rpc_method(
+            "submit_lead_form", submit_lead_form_handler
+        )
+
+        await session.say(f"Thank you for calling {profile['business_name']}. How can I help you today?", allow_interruptions=True)
+
+        # Wait for the session_ended event to be set
+        await session_ended.wait()
+        await session.aclose()
+
+        ctx.shutdown()
 
 async def request_fnc(req: JobRequest):
     logging.info(f"Accepting job {req.job.id}")

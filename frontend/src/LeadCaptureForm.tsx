@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 export interface LeadData {
   name: string;
   inquiry: string;
-  contactDetail: string;
+  email: string;
+  phone: string;
 }
 
 interface LeadCaptureFormProps {
@@ -16,19 +17,19 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ initialData, o
   const [formData, setFormData] = useState<LeadData>({
       name: '',
       inquiry: '',
-      contactDetail: ''
+      email: '',
+      phone: ''
   });
 
-  // This hook now correctly populates the state from the prop
   useEffect(() => {
     setFormData({
       name: initialData.name || '',
       inquiry: initialData.inquiry || '',
-      contactDetail: initialData.contact_detail || '' // Read from snake_case
+      email: initialData.email || '',
+      phone: initialData.phone || ''
     });
   }, [initialData]);
 
-  // This handler is now simplified and works for all fields
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
     setFormData((prevData) => ({ ...prevData, [id]: value }));
@@ -54,8 +55,12 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ initialData, o
             <textarea id="inquiry" value={formData.inquiry} onChange={handleChange} rows={3}></textarea>
           </div>
           <div className="form-group">
-            <label htmlFor="contactDetail">Contact (Email/Phone)</label>
-            <input type="text" id="contactDetail" value={formData.contactDetail} onChange={handleChange} />
+            <label htmlFor="email">Email Address (Required)</label>
+            <input type="email" id="email" value={formData.email} onChange={handleChange} required />
+          </div>
+          <div className="form-group">
+            <label htmlFor="phone">Phone Number (Optional)</label>
+            <input type="tel" id="phone" value={formData.phone} onChange={handleChange} />
           </div>
           <div className="form-actions">
             <button type="button" className="button-secondary" onClick={onCancel}>Cancel</button>
