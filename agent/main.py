@@ -113,7 +113,7 @@ async def entrypoint(ctx: agents.JobContext):
             return
 
         stt = deepgram.STT()
-        tts = deepgram.TTS(model="aura-asteria-en")
+        tts = ctx.proc.userdata["tts"]
         llm = groq.LLM(model="llama-3.3-70b-versatile")
         vad = silero.VAD.load()
         turn = MultilingualModel()
@@ -185,12 +185,20 @@ async def request_fnc(req: JobRequest):
     logging.info(f"Accepting job {req.job.id}")
     await req.accept(identity="contractor-leads-bot-agent")
 
+# v-- THIS ENTIRE FUNCTION IS NEW --v
+def prewarm(proc: agents.JobProcess):
+    # This function is called once when the worker process starts.
+    # We create the TTS client here to handle its slow initial setup.
+    proc.userdata["tts"] = groq.TTS(model="playai-tts", voice="Arista-PlayAI")
+# ^-- THIS ENTIRE FUNCTION IS NEW --^
+
 if __name__ == "__main__":
     logging.info("Starting Contractor Leads Bot Agent Worker...")
 
     agents.cli.run_app(
-        agents.WorkerOptions(
-            request_fnc=request_fnc,
-            entrypoint_fnc=entrypoint
-        )
+    agents.WorkerOptions(
+        request_fnc=request_fnc,
+        entrypoint_fnc=entrypoint,
+        prewarm_fnc=prewarm  # <-- THIS LINE IS ADDED
     )
+)
