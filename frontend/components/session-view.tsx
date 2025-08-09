@@ -24,14 +24,10 @@ function isAgentAvailable(agentState: AgentState) {
 
 interface SessionViewProps {
   appConfig: AppConfig;
-  disabled: boolean;
-  sessionStarted: boolean;
 }
 
 export const SessionView = ({
   appConfig,
-  disabled,
-  sessionStarted,
   ref,
 }: React.ComponentProps<'div'> & SessionViewProps) => {
   const { state: agentState } = useVoiceAssistant();
@@ -39,65 +35,15 @@ export const SessionView = ({
   const { messages, send } = useChatAndTranscription();
   const room = useRoomContext();
 
+ 
+
   useDebugMode();
 
   async function handleSendMessage(message: string) {
     await send(message);
   }
 
-  useEffect(() => {
-  if (!sessionStarted) {
-    return;
-  }
-
-  // Check for agent presence immediately upon connection and when participants change.
-  const checkAgentPresence = () => {
-    return Array.from(room.remoteParticipants.values()).some((p) => p.isAgent);
-  };
-
-  // Initial check
-  if (checkAgentPresence()) {
-    return; // Agent is already here, no need for a timeout.
-  }
-
-  const timeout = setTimeout(() => {
-    if (!checkAgentPresence()) {
-      const reason = 'Agent did not join the room in time.';
-      toastAlert({
-        title: 'Session ended',
-        description: (
-          <p className="w-full">
-            {reason}
-            <a
-              target="_blank"
-              rel="noopener noreferrer"
-              href="https://docs.livekit.io/agents/start/voice-ai/"
-              className="whitespace-nowrap underline"
-            >
-              See quickstart guide
-            </a>
-            .
-          </p>
-        ),
-      });
-      room.disconnect();
-    }
-  }, 30_000); // 30 second timeout
-
-  // Also check when a participant connects
-  const handleParticipantConnected = () => {
-    if (checkAgentPresence()) {
-      clearTimeout(timeout);
-    }
-  };
-
-  room.on('participantConnected', handleParticipantConnected);
-
-  return () => {
-    clearTimeout(timeout);
-    room.off('participantConnected', handleParticipantConnected);
-  };
-}, [sessionStarted, room]);
+  
 
   const { supportsChatInput, supportsVideoInput, supportsScreenShare } = appConfig;
   const capabilities = {
@@ -109,8 +55,7 @@ export const SessionView = ({
   return (
     <main
       ref={ref}
-      inert={disabled}
-      className={
+        className={
         // prevent page scrollbar
         // when !chatOpen due to 'translate-y-20'
         cn(!chatOpen && 'max-h-svh overflow-hidden')
@@ -147,15 +92,9 @@ export const SessionView = ({
       <MediaTiles chatOpen={chatOpen} />
 
       <div className="bg-background fixed right-0 bottom-0 left-0 z-50 px-3 pt-2 pb-3 md:px-12 md:pb-12">
-        <motion.div
-          key="control-bar"
-          initial={{ opacity: 0, translateY: '100%' }}
-          animate={{
-            opacity: sessionStarted ? 1 : 0,
-            translateY: sessionStarted ? '0%' : '100%',
-          }}
-          transition={{ duration: 0.3, delay: sessionStarted ? 0.5 : 0, ease: 'easeOut' }}
-        >
+                    <motion.div
+        key="control-bar"
+      >
           <div className="relative z-10 mx-auto w-full max-w-2xl">
             {appConfig.isPreConnectBufferEnabled && (
               <motion.div

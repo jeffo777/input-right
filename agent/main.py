@@ -10,7 +10,7 @@ load_dotenv()
 
 from livekit import agents
 # This is the corrected import path for the event and state enum
-from livekit.agents import JobRequest, function_tool, get_job_context
+from livekit.agents import JobRequest, function_tool, get_job_context, UserStateChangedEvent
 from livekit import rtc
 from livekit.plugins import deepgram, groq, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
@@ -96,14 +96,28 @@ async def fetch_contractor_profile(session: aiohttp.ClientSession, contractor_id
 async def entrypoint(ctx: agents.JobContext):
     logging.info(f"Agent received job: {ctx.job.id} for room {ctx.room.name}")
     
-    # This event will signal when the main loop should exit
     session_ended = asyncio.Event()
+    greeting_allowed = asyncio.Event()
+
+    # Set up event listeners before connecting to the room to avoid missing initial events.
+    @ctx.room.on("track_subscribed")
+    def on_track_subscribed(track: rtc.Track, publication: rtc.TrackPublication, participant: rtc.RemoteParticipant):
+        # Once we have subscribed to the user's audio track, we can greet them
+        if track.kind == rtc.TrackKind.KIND_AUDIO and not participant.identity.startswith("contractor-leads-bot-agent"):
+            logging.info("AGENT: User audio track subscribed. Allowing greeting.")
+            greeting_allowed.set()
+
+    @ctx.room.on("participant_disconnected")
+    def on_participant_disconnected(participant):
+        logging.info(f"Participant disconnected: {participant.identity}, closing session.")
+        session_ended.set()
 
     async with aiohttp.ClientSession() as http_session:
         try:
             contractor_id = ctx.room.name
             profile = await fetch_contractor_profile(http_session, contractor_id)
 
+            # Now, connect to the room
             await ctx.connect()
             logging.info("Agent connected to the room.")
 
@@ -121,10 +135,19 @@ async def entrypoint(ctx: agents.JobContext):
         session = agents.AgentSession(stt=stt, llm=llm, tts=tts, vad=vad, turn_detection=turn)
         agent = ContractorAgent(profile)
 
+        @session.on("user_state_changed")
+        def on_user_state_changed(ev: UserStateChangedEvent):
+            if ev.new_state == "away" and agent._is_form_displayed:
+                logging.info("User is viewing the form, ignoring away state to prevent session timeout.")
+                return
+            if ev.new_state == "away":
+                logging.info("User is away and no form is displayed, closing session.")
+                session_ended.set()
+
         async def submit_lead_form_handler(data: rtc.RpcInvocationData):
             logging.info(f"Agent received submit_lead_form RPC with payload: {data.payload}")
             try:
-                agent._is_form_displayed = False # Reset the flag
+                agent._is_form_displayed = False
                 frontend_data = json.loads(data.payload)
                 backend_payload = {
                     "contractor_id": ctx.room.name,
@@ -133,13 +156,11 @@ async def entrypoint(ctx: agents.JobContext):
                     "visitor_email": frontend_data.get("email"),
                     "visitor_phone": frontend_data.get("phone"),
                 }
-
                 url = f"{INTERNAL_API_URL}/api/internal/leads"
                 headers = {"Authorization": INTERNAL_API_KEY}
                 async with http_session.post(url, headers=headers, json=backend_payload) as response:
                     if response.status == 201:
                         logging.info("Successfully saved lead to the database.")
-                        # Use .say() for a direct, non-reply statement
                         await session.say(
                             "Thank you. Your information has been sent. Was there anything else I can help you with today?",
                             allow_interruptions=True
@@ -147,39 +168,32 @@ async def entrypoint(ctx: agents.JobContext):
                     else:
                         logging.error(f"Failed to save lead. Status: {response.status}, Body: {await response.text()}")
                         await session.say("I'm sorry, there was an error saving your information. Please try again in a moment.")
-
             except Exception as e:
                 logging.error(f"Error processing submit_lead_form RPC: {e}")
                 await session.say("I'm sorry, a technical error occurred. Please try again.")
 
-        @ctx.room.on("participant_disconnected")
-        def on_participant_disconnected(participant):
-            logging.info(f"Participant disconnected: {participant.identity}, closing session.")
-            session_ended.set()
-
-        @session.on("user_state_changed")
-        def on_user_state_changed(ev: agents.UserStateChangedEvent):
-            if ev.new_state == "away" and agent._is_form_displayed:
-                logging.info("User is viewing the form, ignoring away state to prevent session timeout.")
-                return
-
-            if ev.new_state == "away":
-                logging.info("User is away and no form is displayed, closing session.")
-                session_ended.set()
-
+        logging.info("AGENT: Attempting to start AgentSession...")
         await session.start(room=ctx.room, agent=agent)
+        logging.info("AGENT: AgentSession started.")
 
         ctx.room.local_participant.register_rpc_method(
             "submit_lead_form", submit_lead_form_handler
         )
 
-        await session.say(f"Thank you for calling {profile['business_name']}. How can I help you today?", allow_interruptions=True)
+        try:
+            logging.info("AGENT: Waiting for a user to connect with an audio track...")
+            await asyncio.wait_for(greeting_allowed.wait(), timeout=20.0)
+            logging.info("AGENT: Greeting is allowed. Attempting to say initial greeting...")
+            await session.say(f"Thank you for calling {profile['business_name']}. How can I help you today?", allow_interruptions=True)
+            logging.info("AGENT: Finished saying initial greeting.")
+        except asyncio.TimeoutError:
+            logging.warning("AGENT: Timed out waiting for user audio track. Not sending greeting.")
+            session_ended.set()
 
-        # Wait for the session_ended event to be set
         await session_ended.wait()
         await session.aclose()
 
-        ctx.shutdown()
+    ctx.shutdown()
 
 async def request_fnc(req: JobRequest):
     logging.info(f"Accepting job {req.job.id}")
