@@ -21,12 +21,15 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ initialData, o
       phone: ''
   });
 
-  useEffect(() => {
+      useEffect(() => {
+    console.log("LeadCaptureForm received initialData:", initialData);
+    // The actual lead data is inside the 'payload' property, which is a JSON string
+    const leadDetails = JSON.parse(initialData.payload);
     setFormData({
-      name: initialData.name || '',
-      inquiry: initialData.inquiry || '',
-      email: initialData.email || '',
-      phone: initialData.phone || ''
+      name: leadDetails.name || '',
+      inquiry: leadDetails.inquiry || '',
+      email: leadDetails.email || '',
+      phone: leadDetails.phone || ''
     });
   }, [initialData]);
 
