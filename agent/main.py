@@ -154,8 +154,12 @@ async def entrypoint(ctx: agents.JobContext):
             try:
                 agent._is_form_displayed = False
                 frontend_data = json.loads(data.payload)
+                
+                # Correctly parse the contractor_id from the room name
+                contractor_id = ctx.room.name.split('_')[0]
+
                 backend_payload = {
-                    "contractor_id": ctx.room.name,
+                    "contractor_id": contractor_id,
                     "visitor_name": frontend_data.get("name"),
                     "inquiry": frontend_data.get("inquiry"),
                     "visitor_email": frontend_data.get("email"),

@@ -1,3 +1,5 @@
+import logging
+
 import os
 import uuid
 from fastapi import APIRouter, HTTPException, Depends, status
@@ -101,13 +103,28 @@ async def create_lead(
     database: AsyncSession = Depends(db.get_db)
 ):
     """Creates a new lead in the database."""
-    query = insert(leads).values(**lead.dict())
-    result = await database.execute(query)
-    await database.commit()
+    logging.info(f"Received request to create lead: {lead.model_dump()}")
+    
+    # Use .model_dump() for Pydantic v2
+    query = insert(leads).values(**lead.model_dump())
+    
+    try:
+        result = await database.execute(query)
+        await database.commit()
+        logging.info(f"Successfully inserted lead with ID: {result.inserted_primary_key[0]}")
+    except Exception as e:
+        # THIS IS THE CRITICAL LOGGING WE NEED
+        logging.error(f"DATABASE ERROR during lead creation: {e}", exc_info=True)
+        await database.rollback()
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
-    # Pydantic can't validate the result directly, so we build the response dict
-    created_lead = lead.dict()
-    created_lead['id'] = result.inserted_primary_key[0]
-    created_lead['status'] = 'new'
-    created_lead['captured_at'] = "2025-07-25T00:00:00" # Placeholder
-    return created_lead
+    # Fetch the newly created lead to return the full object
+    select_query = select(leads).where(leads.c.id == result.inserted_primary_key[0])
+    new_lead_record = await database.execute(select_query)
+    db_lead = new_lead_record.first()
+
+    if not db_lead:
+         raise HTTPException(status_code=500, detail="Could not retrieve newly created lead.")
+
+    # Manually convert the SQLAlchemy Row object to a dictionary before returning
+    return dict(db_lead._mapping)
