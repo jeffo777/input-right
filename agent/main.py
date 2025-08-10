@@ -114,7 +114,12 @@ async def entrypoint(ctx: agents.JobContext):
 
     async with aiohttp.ClientSession() as http_session:
         try:
-            contractor_id = ctx.room.name
+            # The room name is now "contractor_id-conversation_id".
+            # We need to extract just the contractor_id part.
+            # This splits the string by '-' and rejoins all but the last part.
+            # The room name is now "contractor_id_conversation_id".
+            # We can reliably split by the first underscore.
+            contractor_id = ctx.room.name.split('_')[0]
             profile = await fetch_contractor_profile(http_session, contractor_id)
 
             # Now, connect to the room

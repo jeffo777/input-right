@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useRoomContext } from '@livekit/components-react';
+import { Room } from 'livekit-client';
 
 export interface LeadData {
   name: string;
@@ -9,11 +11,12 @@ export interface LeadData {
 
 interface LeadCaptureFormProps {
   initialData: any;
-  onSubmit: (data: LeadData) => void;
+  onSubmit: (room: Room, data: LeadData) => void;
   onCancel: () => void;
 }
 
 export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ initialData, onSubmit, onCancel }) => {
+  const room = useRoomContext();
   const [formData, setFormData] = useState<LeadData>({
       name: '',
       inquiry: '',
@@ -40,7 +43,7 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({ initialData, o
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    onSubmit(room, formData);
   };
 
   return (

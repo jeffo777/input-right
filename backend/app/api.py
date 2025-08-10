@@ -24,14 +24,16 @@ router = APIRouter()
 
 class TokenRequest(BaseModel):
     contractor_id: str
+    room_name: str
 
 @router.post("/api/token")
 async def get_token(request: TokenRequest):
     if not LIVEKIT_API_KEY or not LIVEKIT_API_SECRET:
         raise HTTPException(status_code=500, detail="LiveKit server credentials not configured.")
     
-    room_name = request.contractor_id
-    participant_identity = f"visitor-{request.contractor_id}-{uuid.uuid4()}"
+    # The room_name is now provided by the frontend for each unique session
+    room_name = request.room_name
+    participant_identity = f"visitor-{uuid.uuid4()}" # contractor_id is redundant here now
 
     token = api.AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET) \
         .with_identity(participant_identity) \

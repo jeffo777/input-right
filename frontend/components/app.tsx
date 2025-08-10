@@ -14,9 +14,6 @@ import { LiveKitSessionManager } from './livekit-session-manager';
 
 const MotionWelcome = motion.create(Welcome);
 
-// A global variable to hold the room object for the form submission handler.
-// This is a pragmatic approach for the MVP.
-let room_instance: Room | null = null;
 
 interface AppProps {
   appConfig: AppConfig;
@@ -34,7 +31,7 @@ export function App({ appConfig, livekitUrl, apiUrl }: AppProps) {
     console.log(`[${new Date().toISOString()}] APP: Disconnected from room.`);
     setSessionStarted(false);
     refreshConnectionDetails();
-    room_instance = null; // Clean up the global room instance
+    
   };
 
   const onMediaDevicesError = (error: Error) => {
@@ -44,14 +41,14 @@ export function App({ appConfig, livekitUrl, apiUrl }: AppProps) {
     });
   };
 
-  const handleFormSubmit = async (data: any) => {
-    if (!room_instance || !room_instance.localParticipant) {
+    const handleFormSubmit = async (room: Room, data: any) => {
+    if (!room || !room.localParticipant) {
       console.error("Room instance not available for RPC.");
       return;
     }
     try {
       const payload = JSON.stringify(data);
-      await room_instance.localParticipant.performRpc({
+      await room.localParticipant.performRpc({
         destinationIdentity: "contractor-leads-bot-agent",
         method: "submit_lead_form",
         payload: payload,
@@ -95,7 +92,7 @@ export function App({ appConfig, livekitUrl, apiUrl }: AppProps) {
           audio={true}
           onConnected={(room) => {
             console.log(`[${new Date().toISOString()}] APP: LiveKitRoom connected.`);
-            room_instance = room;
+            
           }}
           onDisconnected={onDisconnected}
           onError={onMediaDevicesError}
@@ -125,7 +122,7 @@ export function App({ appConfig, livekitUrl, apiUrl }: AppProps) {
           {isFormVisible && leadData && (
             <LeadCaptureForm
               initialData={leadData as any}
-              onSubmit={handleFormSubmit}
+                        onSubmit={(room, data) => handleFormSubmit(room, data)}
               onCancel={handleFormCancel}
             />
           )}

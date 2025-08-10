@@ -10,7 +10,7 @@ import { useCallback, useEffect, useState } from 'react';
  export default function useConnectionDetails() {
    const [connectionDetails, setConnectionDetails] = useState<ConnectionDetails | null>(null);
 
-   const fetchConnectionDetails = useCallback(() => {
+      const fetchConnectionDetails = useCallback(() => {
      setConnectionDetails(null);
      const getDetails = async () => {
        try {
@@ -20,10 +20,18 @@ import { useCallback, useEffect, useState } from 'react';
          const livekitUrl = "wss://contractor-leads-bot-d8djm77w.livekit.cloud"; // Your LiveKit URL
          // --- END OF HARDCODED VALUES ---
 
+         // 1. Generate a unique identifier for this specific conversation
+         const conversationId = crypto.randomUUID();
+         const roomName = `${contractorId}_${conversationId}`;
+
          const resp = await fetch(`${apiUrl}/api/token`, {
            method: 'POST',
            headers: { 'Content-Type': 'application/json' },
-           body: JSON.stringify({ contractor_id: contractorId }),
+           // 2. Send both the contractorId and the unique roomName to the backend
+           body: JSON.stringify({ 
+             contractor_id: contractorId,
+             room_name: roomName 
+           }),
          });
 
          if (!resp.ok) {
@@ -35,7 +43,7 @@ import { useCallback, useEffect, useState } from 'react';
 
          const details: ConnectionDetails = {
            serverUrl: livekitUrl,
-           roomName: contractorId,
+           roomName: roomName, // 3. Use the unique roomName to connect
            participantName: 'Website Visitor',
            participantToken: data.token,
          };
