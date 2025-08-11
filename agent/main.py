@@ -21,10 +21,10 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 INTERNAL_API_URL = os.getenv("INTERNAL_API_URL")
 INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY")
 
-class ContractorAgent(agents.Agent):
-    def __init__(self, contractor_profile: dict):
+class BusinessAgent(agents.Agent):
+    def __init__(self, business_profile: dict):
         instructions = (
-            f"You are a friendly and helpful digital receptionist for {contractor_profile['business_name']}. "
+            f"You are a friendly and helpful digital receptionist for {business_profile['business_name']}. "
             f"Your primary goal is to answer the user's questions based on the business information provided. "
             f"Your secondary goal is to capture new customer leads, but ONLY if the user expresses a desire to be contacted. "
             f"If the user asks for a quote, a callback, or a service visit, that is your cue to collect their information. "
@@ -36,7 +36,7 @@ class ContractorAgent(agents.Agent):
             f"Also, let them know they can either edit the form directly or tell you if they want to make any changes. "
             f"If the user asks you to change any of the details while the form is displayed, you MUST call the `present_verification_form` tool again with the updated information. "
             f"If the user is just asking questions, simply answer them and remain helpful. Do not push to capture their details. "
-            f"Business Information: {contractor_profile['knowledge_base']}"
+            f"Business Information: {business_profile['knowledge_base']}"
         )
         super().__init__(instructions=instructions)
         # This flag tracks if the form is active on the user's screen
@@ -84,13 +84,13 @@ class ContractorAgent(agents.Agent):
             logging.error(f"Failed to send RPC: {e}")
             return "Error: There was a technical problem displaying the form to the user."
 
-async def fetch_contractor_profile(session: aiohttp.ClientSession, contractor_id: str) -> dict:
-    url = f"{INTERNAL_API_URL}/api/internal/contractors/{contractor_id}"
+async def fetch_business_profile(session: aiohttp.ClientSession, business_id: str) -> dict:
+    url = f"{INTERNAL_API_URL}/api/internal/businesses/{business_id}"
     headers = {"Authorization": INTERNAL_API_KEY}
     async with session.get(url, headers=headers) as response:
         if response.status != 200:
-            logging.error(f"Failed to fetch contractor profile: {response.status}")
-            raise Exception(f"Contractor not found: {contractor_id}")
+            logging.error(f"Failed to fetch business profile: {response.status}")
+            raise Exception(f"Business not found: {business_id}")
         return await response.json()
 
 async def entrypoint(ctx: agents.JobContext):
@@ -119,8 +119,8 @@ async def entrypoint(ctx: agents.JobContext):
             # This splits the string by '-' and rejoins all but the last part.
             # The room name is now "contractor_id_conversation_id".
             # We can reliably split by the first underscore.
-            contractor_id = ctx.room.name.split('_')[0]
-            profile = await fetch_contractor_profile(http_session, contractor_id)
+            business_id = ctx.room.name.split('_')[0]
+            profile = await fetch_business_profile(http_session, business_id)
 
             # Now, connect to the room
             await ctx.connect()
@@ -132,13 +132,15 @@ async def entrypoint(ctx: agents.JobContext):
             return
 
         stt = deepgram.STT()
-        tts = ctx.proc.userdata["tts"]
         llm = groq.LLM(model="llama-3.3-70b-versatile")
+        
+        # Use the pre-warmed TTS client, but load heavy models here
+        tts = ctx.proc.userdata["tts"]
         vad = silero.VAD.load()
         turn = MultilingualModel()
 
         session = agents.AgentSession(stt=stt, llm=llm, tts=tts, vad=vad, turn_detection=turn)
-        agent = ContractorAgent(profile)
+        agent = BusinessAgent(profile)
 
         @session.on("user_state_changed")
         def on_user_state_changed(ev: UserStateChangedEvent):
@@ -165,10 +167,10 @@ async def entrypoint(ctx: agents.JobContext):
                     agent._is_form_displayed = False
                     frontend_data = json.loads(data.payload)
                     
-                    contractor_id = ctx.room.name.split('_')[0]
+                    business_id = ctx.room.name.split('_')[0]
 
                     backend_payload = {
-                        "contractor_id": contractor_id,
+                        "business_id": business_id,
                         "visitor_name": frontend_data.get("name"),
                         "inquiry": frontend_data.get("inquiry"),
                         "visitor_email": frontend_data.get("email"),
@@ -225,9 +227,10 @@ async def request_fnc(req: JobRequest):
 
 # v-- THIS ENTIRE FUNCTION IS NEW --v
 def prewarm(proc: agents.JobProcess):
-    # This function is called once when the worker process starts.
-    # We create the TTS client here to handle its slow initial setup.
+    # This function is called once when a new job process starts.
+    # We only initialize lightweight clients here. Heavy models are loaded in the entrypoint.
     proc.userdata["tts"] = groq.TTS(model="playai-tts", voice="Arista-PlayAI")
+    logging.info("Prewarm complete: TTS client initialized.")
 # ^-- THIS ENTIRE FUNCTION IS NEW --^
 
 if __name__ == "__main__":

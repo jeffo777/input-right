@@ -12,7 +12,7 @@ from sqlalchemy import select, insert
 
 from . import security
 from . import db
-from .models import contractors, leads, ContractorCreate, LeadCreate, Contractor, Lead
+from .models import businesses, leads, BusinessCreate, LeadCreate, Business, Lead
 
 # Load environment variables
 load_dotenv()
@@ -25,7 +25,7 @@ router = APIRouter()
 # --- Public Token Endpoint ---
 
 class TokenRequest(BaseModel):
-    contractor_id: str
+    business_id: str
     room_name: str
 
 @router.post("/api/token")
@@ -53,44 +53,54 @@ async def get_token(request: TokenRequest):
 # --- Internal Secure Endpoints ---
 
 @router.post(
-    "/api/internal/contractors",
+    "/api/internal/businesses",
     status_code=status.HTTP_201_CREATED,
-    response_model=Contractor,
+    response_model=Business,
     dependencies=[Depends(security.get_api_key)]
 )
-async def create_contractor(
-    contractor: ContractorCreate,
+async def create_business(
+    business: BusinessCreate,
     database: AsyncSession = Depends(db.get_db)
 ):
-    """Creates a new contractor in the database."""
-    query = insert(contractors).values(**contractor.dict())
-    result = await database.execute(query)
-    await database.commit()
-    
-    # Pydantic can't validate the result directly, so we build the response dict
-    created_contractor = contractor.dict()
-    created_contractor['id'] = result.inserted_primary_key[0]
-    created_contractor['created_at'] = "2025-07-25T00:00:00" # Placeholder
-    return created_contractor
+    """Creates a new business in the database."""
+    # Use .model_dump() for Pydantic v2
+    query = insert(businesses).values(**business.model_dump())
+    try:
+        result = await database.execute(query)
+        await database.commit()
+    except Exception as e:
+        logging.error(f"DATABASE ERROR during business creation: {e}", exc_info=True)
+        await database.rollback()
+        raise HTTPException(status_code=500, detail="Internal Server Error creating business.")
+
+    # To return the full object including the server-set created_at, we fetch it back.
+    select_query = select(businesses).where(businesses.c.id == result.inserted_primary_key[0])
+    new_business_record = await database.execute(select_query)
+    db_business = new_business_record.first()
+
+    if not db_business:
+        raise HTTPException(status_code=500, detail="Could not retrieve newly created business.")
+
+    return dict(db_business._mapping)
 
 @router.get(
-    "/api/internal/contractors/{contractor_id}",
-    response_model=Contractor,
+    "/api/internal/businesses/{business_id}",
+    response_model=Business,
     dependencies=[Depends(security.get_api_key)]
 )
-async def get_contractor_profile(
-    contractor_id: str,
+async def get_business_profile(
+    business_id: str,
     database: AsyncSession = Depends(db.get_db)
 ):
-    """Fetches contractor-specific data from the database."""
-    query = select(contractors).where(contractors.c.id == contractor_id)
+    """Fetches business-specific data from the database."""
+    query = select(businesses).where(businesses.c.id == business_id)
     result = await database.execute(query)
-    db_contractor = result.first()
+    db_business = result.first()
 
-    if db_contractor is None:
-        raise HTTPException(status_code=404, detail="Contractor not found")
+    if db_business is None:
+        raise HTTPException(status_code=404, detail="Business not found")
     
-    return db_contractor
+    return db_business
 
 @router.post(
     "/api/internal/leads",

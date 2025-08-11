@@ -15,21 +15,21 @@ import { useCallback, useEffect, useState } from 'react';
      const getDetails = async () => {
        try {
          // --- START OF HARDCODED VALUES ---
-         const contractorId = "bob-the-builder-123";
+         const businessId = "bob-the-builder-123"; // Renamed variable
          const apiUrl = "http://127.0.0.1:8001"; // Our Python backend
          const livekitUrl = "wss://contractor-leads-bot-d8djm77w.livekit.cloud"; // Your LiveKit URL
          // --- END OF HARDCODED VALUES ---
 
          // 1. Generate a unique identifier for this specific conversation
          const conversationId = crypto.randomUUID();
-         const roomName = `${contractorId}_${conversationId}`;
+         const roomName = `${businessId}_${conversationId}`; // Updated room name construction
 
          const resp = await fetch(`${apiUrl}/api/token`, {
            method: 'POST',
            headers: { 'Content-Type': 'application/json' },
-           // 2. Send both the contractorId and the unique roomName to the backend
+           // 2. Send both the business_id and the unique roomName to the backend
            body: JSON.stringify({ 
-             contractor_id: contractorId,
+             business_id: businessId, // Renamed field in the request body
              room_name: roomName 
            }),
          });

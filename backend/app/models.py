@@ -16,9 +16,9 @@ DATABASE_URL = "postgresql+psycopg2://postgres:Theonly***4me@localhost/contracto
 
 metadata = MetaData()
 
-# Contractors Table Definition
-contractors = Table(
-    "contractors",
+# Businesses Table Definition
+businesses = Table(
+    "businesses",
     metadata,
     Column("id", String(255), primary_key=True),
     Column("business_name", String(255), nullable=False),
@@ -29,12 +29,13 @@ contractors = Table(
     Column("created_at", DateTime, default=datetime.datetime.utcnow),
 )
 
+
 # Leads Table Definition
 leads = Table(
     "leads",
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("contractor_id", String(255), ForeignKey("contractors.id"), nullable=False),
+    Column("business_id", String(255), ForeignKey("businesses.id"), nullable=False),
     Column("visitor_name", String(255)),
     Column("visitor_phone", String(50)),
     Column("visitor_email", String(255)),
@@ -51,28 +52,28 @@ class LeadBase(BaseModel):
     inquiry: str
 
 class LeadCreate(LeadBase):
-    contractor_id: str
+    business_id: str
 
 class Lead(LeadBase):
     id: int
-    contractor_id: str
+    business_id: str
     status: str
     captured_at: datetime.datetime
 
     class Config:
         from_attributes = True
 
-class ContractorBase(BaseModel):
+class BusinessBase(BaseModel):
     business_name: str
     contact_name: str | None = None
     phone_number: str | None = None
     email: str | None = None
     knowledge_base: str | None = None
 
-class ContractorCreate(ContractorBase):
+class BusinessCreate(BusinessBase):
     id: str
 
-class Contractor(ContractorBase):
+class Business(BusinessBase):
     id: str
     created_at: datetime.datetime
 
