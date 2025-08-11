@@ -150,36 +150,51 @@ async def entrypoint(ctx: agents.JobContext):
                 session_ended.set()
 
         async def submit_lead_form_handler(data: rtc.RpcInvocationData):
+            """
+            This handler is called when the frontend sends the 'submit_lead_form' RPC.
+            It immediately interrupts any agent speech, acknowledges the RPC to prevent a timeout,
+            and then processes the lead submission in the background.
+            """
+            # 1. Immediately interrupt any ongoing speech for a responsive feel.
+            session.interrupt()
             logging.info(f"Agent received submit_lead_form RPC with payload: {data.payload}")
-            try:
-                agent._is_form_displayed = False
-                frontend_data = json.loads(data.payload)
-                
-                # Correctly parse the contractor_id from the room name
-                contractor_id = ctx.room.name.split('_')[0]
 
-                backend_payload = {
-                    "contractor_id": contractor_id,
-                    "visitor_name": frontend_data.get("name"),
-                    "inquiry": frontend_data.get("inquiry"),
-                    "visitor_email": frontend_data.get("email"),
-                    "visitor_phone": frontend_data.get("phone"),
-                }
-                url = f"{INTERNAL_API_URL}/api/internal/leads"
-                headers = {"Authorization": INTERNAL_API_KEY}
-                async with http_session.post(url, headers=headers, json=backend_payload) as response:
-                    if response.status == 201:
-                        logging.info("Successfully saved lead to the database.")
-                        await session.say(
-                            "Thank you. Your information has been sent. Was there anything else I can help you with today?",
-                            allow_interruptions=True
-                        )
-                    else:
-                        logging.error(f"Failed to save lead. Status: {response.status}, Body: {await response.text()}")
-                        await session.say("I'm sorry, there was an error saving your information. Please try again in a moment.")
-            except Exception as e:
-                logging.error(f"Error processing submit_lead_form RPC: {e}")
-                await session.say("I'm sorry, a technical error occurred. Please try again.")
+            async def _process_submission():
+                """Inner function to handle the actual logic in the background."""
+                try:
+                    agent._is_form_displayed = False
+                    frontend_data = json.loads(data.payload)
+                    
+                    contractor_id = ctx.room.name.split('_')[0]
+
+                    backend_payload = {
+                        "contractor_id": contractor_id,
+                        "visitor_name": frontend_data.get("name"),
+                        "inquiry": frontend_data.get("inquiry"),
+                        "visitor_email": frontend_data.get("email"),
+                        "visitor_phone": frontend_data.get("phone"),
+                    }
+                    url = f"{INTERNAL_API_URL}/api/internal/leads"
+                    headers = {"Authorization": INTERNAL_API_KEY}
+                    async with http_session.post(url, headers=headers, json=backend_payload) as response:
+                        if response.status == 201:
+                            logging.info("Successfully saved lead to the database.")
+                            await session.say(
+                                "Thank you. Your information has been sent. Was there anything else I can help you with today?",
+                                allow_interruptions=True
+                            )
+                        else:
+                            logging.error(f"Failed to save lead. Status: {response.status}, Body: {await response.text()}")
+                            await session.say("I'm sorry, there was an error saving your information. Please try again in a moment.")
+                except Exception as e:
+                    logging.error(f"Error processing submit_lead_form RPC in background: {e}")
+                    await session.say("I'm sorry, a technical error occurred. Please try again.")
+
+            # 2. Start the submission processing in the background.
+            asyncio.create_task(_process_submission())
+
+            # 3. Immediately return a success message to the frontend to prevent timeout.
+            return "SUCCESS"
 
         logging.info("AGENT: Attempting to start AgentSession...")
         await session.start(room=ctx.room, agent=agent)
