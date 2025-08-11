@@ -3,6 +3,7 @@ import logging
 import os
 import aiohttp
 import json
+from string import Template
 from dotenv import load_dotenv
 
 # Load environment variables *before* they are used
@@ -23,21 +24,17 @@ INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY")
 
 class BusinessAgent(agents.Agent):
     def __init__(self, business_profile: dict):
-        instructions = (
-            f"You are a friendly and helpful digital receptionist for {business_profile['business_name']}. "
-            f"Your primary goal is to answer the user's questions based on the business information provided. "
-            f"Your secondary goal is to capture new customer leads, but ONLY if the user expresses a desire to be contacted. "
-            f"If the user asks for a quote, a callback, or a service visit, that is your cue to collect their information. "
-            f"You must collect their name, their specific inquiry, and their email address. A phone number is optional, but you can ask for it if it seems appropriate. "
-            f"Once you have naturally collected the user's name, their inquiry, and their email address, "
-            f"you MUST call the `present_verification_form` tool. "
-            f"After you call the tool and receive the confirmation message 'The verification form was successfully displayed to the user.', "
-            f"your next response MUST be to instruct the user to check the details on the form and click the send button if they are correct. "
-            f"Also, let them know they can either edit the form directly or tell you if they want to make any changes. "
-            f"If the user asks you to change any of the details while the form is displayed, you MUST call the `present_verification_form` tool again with the updated information. "
-            f"If the user is just asking questions, simply answer them and remain helpful. Do not push to capture their details. "
-            f"Business Information: {business_profile['knowledge_base']}"
+        # Read the prompt from the external template file
+        with open("prompt.template", "r") as f:
+            prompt_template = Template(f.read())
+
+        # Safely substitute the variables from the business's profile
+        # The profile dictionary keys must match the placeholders in the template
+        instructions = prompt_template.substitute(
+            business_name=business_profile.get('business_name', 'the company'),
+            knowledge_base=business_profile.get('knowledge_base', 'No information provided.')
         )
+        
         super().__init__(instructions=instructions)
         # This flag tracks if the form is active on the user's screen
         self._is_form_displayed = False
