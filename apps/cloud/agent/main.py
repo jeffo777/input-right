@@ -3,6 +3,9 @@ import logging
 import os
 import aiohttp
 import json
+
+
+from core_agent import BusinessAgent
 from string import Template
 from dotenv import load_dotenv
 
@@ -22,64 +25,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 INTERNAL_API_URL = os.getenv("INTERNAL_API_URL")
 INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY")
 
-class BusinessAgent(agents.Agent):
-    def __init__(self, business_profile: dict):
-        # Read the prompt from the external template file
-        with open("prompt.template", "r") as f:
-            prompt_template = Template(f.read())
-
-        # Safely substitute the variables from the business's profile
-        # The profile dictionary keys must match the placeholders in the template
-        instructions = prompt_template.substitute(
-            business_name=business_profile.get('business_name', 'the company'),
-            knowledge_base=business_profile.get('knowledge_base', 'No information provided.')
-        )
-        
-        super().__init__(instructions=instructions)
-        # This flag tracks if the form is active on the user's screen
-        self._is_form_displayed = False
-
-    @function_tool()
-    async def present_verification_form(self, name: str, inquiry: str, email: str, phone: str | None = None):
-        """
-        Call this tool ONLY when the user has asked to be contacted and you have collected their name, inquiry, and email address.
-        This tool will display a form on the user's screen for them to verify their information.
-        Args:
-            name (str): The full name of the user.
-            inquiry (str): A summary of what the user is asking for (e.g., 'quote for a leaky pipe').
-            email (str): The user's email address. This is required.
-            phone (str, optional): The user's phone number. This is optional.
-        """
-        logging.info(f"LLM triggered present_verification_form with: name='{name}', inquiry='{inquiry}', email='{email}', phone='{phone}'")
-
-        ctx = get_job_context()
-        room = ctx.room
-
-        await self.session.say("Great. Please take a moment to verify your details on the screen.", allow_interruptions=False)
-
-        visitor_participant = next(iter(room.remote_participants.values()), None)
-        if not visitor_participant:
-            logging.error("Could not find a remote participant to send RPC to.")
-            return "Error: Could not find the user to display the form."
-
-        payload = {
-            "name": name,
-            "inquiry": inquiry,
-            "email": email,
-            "phone": phone,
-        }
-        try:
-            await room.local_participant.perform_rpc(
-                destination_identity=visitor_participant.identity,
-                method="display_lead_form",
-                payload=json.dumps(payload)
-            )
-            logging.info(f"Successfully sent RPC to {visitor_participant.identity}")
-            self._is_form_displayed = True # Set the flag to True
-            return "The verification form was successfully displayed to the user."
-        except Exception as e:
-            logging.error(f"Failed to send RPC: {e}")
-            return "Error: There was a technical problem displaying the form to the user."
 
 async def fetch_business_profile(session: aiohttp.ClientSession, business_id: str) -> dict:
     url = f"{INTERNAL_API_URL}/api/internal/businesses/{business_id}"
@@ -128,6 +73,24 @@ async def entrypoint(ctx: agents.JobContext):
             ctx.shutdown()
             return
 
+                # This is the application-specific logic for the Cloud version.
+        # It constructs the prompt from the database profile.
+        instructions = (
+            f"You are a friendly and helpful digital receptionist for {profile['business_name']}. "
+            f"Your primary goal is to answer the user's questions based on the business information provided. "
+            f"Your secondary goal is to capture new customer leads, but ONLY if the user expresses a desire to be contacted. "
+            f"If the user asks for a quote, a callback, or a service visit, that is your cue to collect their information. "
+            f"You must collect their name, their specific inquiry, and their email address. A phone number is optional, but you can ask for it if it seems appropriate. "
+            f"Once you have naturally collected the user's name, their inquiry, and their email address, "
+            f"you MUST call the `present_verification_form` tool. "
+            f"After you call the tool and receive the confirmation message 'The verification form was successfully displayed to the user.', "
+            f"your next response MUST be to instruct the user to check the details on the form and click the send button if they are correct. "
+            f"Also, let them know they can either edit the form directly or tell you if they want to make any changes. "
+            f"If the user asks you to change any of the details while the form is displayed, you MUST call the `present_verification_form` tool again with the updated information. "
+            f"If the user is just asking questions, simply answer them and remain helpful. Do not push to capture their details. "
+            f"Business Information: {profile['knowledge_base']}"
+        )
+
         stt = deepgram.STT()
         llm = groq.LLM(model="llama-3.3-70b-versatile")
         
@@ -137,7 +100,9 @@ async def entrypoint(ctx: agents.JobContext):
         turn = MultilingualModel()
 
         session = agents.AgentSession(stt=stt, llm=llm, tts=tts, vad=vad, turn_detection=turn)
-        agent = BusinessAgent(profile)
+        
+        # Initialize our shared BusinessAgent with the instructions we just built
+        agent = BusinessAgent(instructions=instructions)
 
         @session.on("user_state_changed")
         def on_user_state_changed(ev: UserStateChangedEvent):

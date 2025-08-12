@@ -1,0 +1,7 @@
+livekit-agents==1.2.2
+livekit-plugins-deepgram==1.2.2
+livekit-plugins-groq==1.2.2
+livekit-plugins-silero==1.2.2
+livekit-plugins-turn-detector==1.2.2
+python-dotenv==1.1.1
+aiohttp==3.12.14

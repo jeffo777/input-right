@@ -1,0 +1,16 @@
+
+[project]
+name = "core-agent"
+version = "0.1.0"
+description = "The core agent logic for the Chat To Form platform."
+authors = [
+    {name = "Your Name", email = "your@email.com"},
+]
+requires-python = ">=3.9"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
