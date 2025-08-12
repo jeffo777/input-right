@@ -53,75 +53,75 @@ async def entrypoint(ctx: agents.JobContext):
         await ctx.connect()
         logging.info("Agent connected to the room.")
 
-    except Exception as e:
-        logging.error(f"Could not start agent session during setup: {e}")
-        ctx.shutdown()
-        return
+        # All model initialization and session logic is now safely inside the try block
+        stt = deepgram.STT()
+        llm = groq.LLM(model="llama-3.3-70b-versatile")
+        tts = ctx.proc.userdata["tts"]
+        vad = silero.VAD.load()
+        turn = MultilingualModel()
 
-    stt = deepgram.STT()
-    llm = groq.LLM(model="llama-3.3-70b-versatile")
-    tts = ctx.proc.userdata["tts"]
-    vad = silero.VAD.load()
-    turn = MultilingualModel()
+        session = agents.AgentSession(stt=stt, llm=llm, tts=tts, vad=vad, turn_detection=turn)
+        agent = BusinessAgent(instructions=instructions)
 
-    session = agents.AgentSession(stt=stt, llm=llm, tts=tts, vad=vad, turn_detection=turn)
-    agent = BusinessAgent(instructions=instructions)
+        @session.on("user_state_changed")
+        def on_user_state_changed(ev: UserStateChangedEvent):
+            if ev.new_state == "away" and agent._is_form_displayed:
+                logging.info("User is viewing the form, ignoring away state.")
+                return
+            if ev.new_state == "away":
+                logging.info("User is away and no form is displayed, closing session.")
+                session_ended.set()
 
-    @session.on("user_state_changed")
-    def on_user_state_changed(ev: UserStateChangedEvent):
-        if ev.new_state == "away" and agent._is_form_displayed:
-            logging.info("User is viewing the form, ignoring away state.")
-            return
-        if ev.new_state == "away":
-            logging.info("User is away and no form is displayed, closing session.")
+        async def submit_lead_form_handler(data: rtc.RpcInvocationData):
+            session.interrupt()
+            logging.info(f"Agent received submit_lead_form RPC with payload: {data.payload}")
+
+            async def _process_submission():
+                if not WEBHOOK_URL:
+                    logging.error("WEBHOOK_URL is not set in the .env file. Cannot send lead.")
+                    await session.say("I'm sorry, there is a configuration error and I can't save your information.")
+                    return
+
+                try:
+                    agent._is_form_displayed = False
+                    lead_data = json.loads(data.payload)
+                    
+                    async with aiohttp.ClientSession() as http_session:
+                        headers = {"Content-Type": "application/json"}
+                        async with http_session.post(WEBHOOK_URL, headers=headers, json=lead_data) as response:
+                            if 200 <= response.status < 300:
+                                logging.info(f"Successfully sent lead data to webhook: {WEBHOOK_URL}")
+                                await session.say(
+                                    "Thank you. Your information has been sent. Was there anything else I can help you with today?",
+                                    allow_interruptions=True
+                                )
+                            else:
+                                logging.error(f"Failed to send lead to webhook. Status: {response.status}")
+                                await session.say("I'm sorry, there was an error sending your information.")
+                except Exception as e:
+                    logging.error(f"Error processing submit_lead_form RPC for webhook: {e}")
+                    await session.say("I'm sorry, a technical error occurred.")
+
+            asyncio.create_task(_process_submission())
+            return "SUCCESS"
+
+        await session.start(room=ctx.room, agent=agent)
+        ctx.room.local_participant.register_rpc_method("submit_lead_form", submit_lead_form_handler)
+
+        try:
+            await asyncio.wait_for(greeting_allowed.wait(), timeout=20.0)
+            await session.say(f"Thank you for calling {os.getenv('BUSINESS_NAME', 'the company')}. How can I help you today?", allow_interruptions=True)
+        except asyncio.TimeoutError:
+            logging.warning("Timed out waiting for user audio track. Not sending greeting.")
             session_ended.set()
 
-    async def submit_lead_form_handler(data: rtc.RpcInvocationData):
-        session.interrupt()
-        logging.info(f"Agent received submit_lead_form RPC with payload: {data.payload}")
+        await session_ended.wait()
+        await session.aclose()
 
-        async def _process_submission():
-            if not WEBHOOK_URL:
-                logging.error("WEBHOOK_URL is not set in the .env file. Cannot send lead.")
-                await session.say("I'm sorry, there is a configuration error and I can't save your information.")
-                return
-
-            try:
-                agent._is_form_displayed = False
-                lead_data = json.loads(data.payload)
-                
-                async with aiohttp.ClientSession() as http_session:
-                    headers = {"Content-Type": "application/json"}
-                    async with http_session.post(WEBHOOK_URL, headers=headers, json=lead_data) as response:
-                        if 200 <= response.status < 300:
-                            logging.info(f"Successfully sent lead data to webhook: {WEBHOOK_URL}")
-                            await session.say(
-                                "Thank you. Your information has been sent. Was there anything else I can help you with today?",
-                                allow_interruptions=True
-                            )
-                        else:
-                            logging.error(f"Failed to send lead to webhook. Status: {response.status}")
-                            await session.say("I'm sorry, there was an error sending your information.")
-            except Exception as e:
-                logging.error(f"Error processing submit_lead_form RPC for webhook: {e}")
-                await session.say("I'm sorry, a technical error occurred.")
-
-        asyncio.create_task(_process_submission())
-        return "SUCCESS"
-
-    await session.start(room=ctx.room, agent=agent)
-    ctx.room.local_participant.register_rpc_method("submit_lead_form", submit_lead_form_handler)
-
-    try:
-        await asyncio.wait_for(greeting_allowed.wait(), timeout=20.0)
-        await session.say(f"Thank you for calling {os.getenv('BUSINESS_NAME', 'the company')}. How can I help you today?", allow_interruptions=True)
-    except asyncio.TimeoutError:
-        logging.warning("Timed out waiting for user audio track. Not sending greeting.")
-        session_ended.set()
-
-    await session_ended.wait()
-    await session.aclose()
-    ctx.shutdown()
+    except Exception as e:
+        logging.error(f"An unhandled error occurred in the entrypoint: {e}", exc_info=True)
+    finally:
+        ctx.shutdown()
 
 async def request_fnc(req: JobRequest):
     logging.info(f"Accepting job {req.job.id} for open-source agent")
