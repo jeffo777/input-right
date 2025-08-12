@@ -3,8 +3,6 @@ import logging
 import os
 import aiohttp
 import json
-import sys
-from pathlib import Path
 from string import Template
 from dotenv import load_dotenv
 
@@ -15,6 +13,7 @@ load_dotenv()
 from core_agent import BusinessAgent
 from livekit import agents, rtc
 from livekit.agents import JobRequest, UserStateChangedEvent
+from livekit.agents import tts
 from livekit.plugins import deepgram, groq, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
@@ -129,8 +128,13 @@ async def request_fnc(req: JobRequest):
     await req.accept(identity="chat-to-form-agent")
 
 def prewarm(proc: agents.JobProcess):
-    proc.userdata["tts"] = groq.TTS(model="playai-tts", voice="Arista-PlayAI")
-    logging.info("Prewarm complete for open-source agent: TTS client initialized.")
+    # Load environment variables into the child process when it starts
+    load_dotenv()
+    logging.info("Prewarm: Environment variables loaded into child process.")
+
+    # For stability, we will temporarily use only the Deepgram TTS client.
+    proc.userdata["tts"] = deepgram.TTS(model="aura-asteria-en")
+    logging.info("Prewarm complete for open-source agent: Deepgram TTS client initialized.")
 
 if __name__ == "__main__":
     logging.info("Starting Chat To Form (Open Source) Agent Worker...")
