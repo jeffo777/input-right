@@ -14,7 +14,7 @@ from core_agent import BusinessAgent
 from livekit import agents, rtc
 from livekit.agents import JobRequest, UserStateChangedEvent
 from livekit.agents import tts
-from livekit.plugins import deepgram, groq, silero
+from livekit.plugins import deepgram, groq, silero, cartesia
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 # Configure logging
@@ -56,11 +56,18 @@ async def entrypoint(ctx: agents.JobContext):
         # All model initialization and session logic is now safely inside the try block
         stt = deepgram.STT()
         llm = groq.LLM(model="llama-3.3-70b-versatile")
-        tts = ctx.proc.userdata["tts"]
+        tts = cartesia.TTS(model="sonic-english") # Initialize Cartesia TTS here
         vad = silero.VAD.load()
         turn = MultilingualModel()
 
-        session = agents.AgentSession(stt=stt, llm=llm, tts=tts, vad=vad, turn_detection=turn)
+        session = agents.AgentSession(
+            stt=stt,
+            llm=llm,
+            tts=tts,
+            vad=vad,
+            turn_detection=turn,
+            user_away_timeout=60,  # Wait for 60 seconds of silence before ending
+        )
         agent = BusinessAgent(instructions=instructions)
 
         @session.on("user_state_changed")
@@ -128,13 +135,10 @@ async def request_fnc(req: JobRequest):
     await req.accept(identity="chat-to-form-agent")
 
 def prewarm(proc: agents.JobProcess):
-    # Load environment variables into the child process when it starts
+    # This function is called once when a new job process starts.
+    # We only load environment variables here. All clients are initialized in the entrypoint.
     load_dotenv()
-    logging.info("Prewarm: Environment variables loaded into child process.")
-
-    # For stability, we will temporarily use only the Deepgram TTS client.
-    proc.userdata["tts"] = deepgram.TTS(model="aura-asteria-en")
-    logging.info("Prewarm complete for open-source agent: Deepgram TTS client initialized.")
+    logging.info("Prewarm complete: Environment variables loaded into child process.")
 
 if __name__ == "__main__":
     logging.info("Starting Chat To Form (Open Source) Agent Worker...")
