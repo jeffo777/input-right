@@ -53,10 +53,14 @@ async def entrypoint(ctx: agents.JobContext):
         await ctx.connect()
         logging.info("Agent connected to the room.")
 
-        # All model initialization and session logic is now safely inside the try block
+                        # All model initialization and session logic is now safely inside the try block
         stt = deepgram.STT()
         llm = groq.LLM(model="llama-3.3-70b-versatile")
-        tts = cartesia.TTS(model="sonic-english") # Initialize Cartesia TTS here
+        
+        # Use the pre-warmed TTS client from userdata
+        tts = ctx.proc.userdata["tts"]
+        
+        # Load heavy, context-aware models just-in-time inside the entrypoint
         vad = silero.VAD.load()
         turn = MultilingualModel()
 
@@ -136,9 +140,12 @@ async def request_fnc(req: JobRequest):
 
 def prewarm(proc: agents.JobProcess):
     # This function is called once when a new job process starts.
-    # We only load environment variables here. All clients are initialized in the entrypoint.
+    # We load environment variables and initialize lightweight, non-context-aware clients here.
     load_dotenv()
-    logging.info("Prewarm complete: Environment variables loaded into child process.")
+    logging.info("Prewarm: Environment variables loaded into child process.")
+    
+    proc.userdata["tts"] = cartesia.TTS(model="sonic-english")
+    logging.info("Prewarm complete: Cartesia TTS client initialized.")
 
 if __name__ == "__main__":
     logging.info("Starting Chat To Form (Open Source) Agent Worker...")
