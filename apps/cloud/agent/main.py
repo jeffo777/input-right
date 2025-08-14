@@ -16,7 +16,7 @@ from livekit import agents
 # This is the corrected import path for the event and state enum
 from livekit.agents import JobRequest, function_tool, get_job_context, UserStateChangedEvent
 from livekit import rtc
-from livekit.plugins import deepgram, groq, silero
+from livekit.plugins import deepgram, groq, silero, cartesia
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -90,11 +90,11 @@ async def entrypoint(ctx: agents.JobContext):
             f"Business Information: {profile['knowledge_base']}"
         )
 
-                stt = deepgram.STT()
+                        stt = deepgram.STT()
         llm = groq.LLM(model="llama-3.3-70b-versatile")
-        tts = cartesia.TTS(model="sonic-english") # Initialize Cartesia TTS here
         
-        # Use the pre-warmed VAD model from userdata
+        # Use the pre-warmed clients and models from userdata
+        tts = ctx.proc.userdata["tts"]
         vad = ctx.proc.userdata["vad"]
 
         session = agents.AgentSession(
@@ -103,7 +103,7 @@ async def entrypoint(ctx: agents.JobContext):
             tts=tts,
             vad=vad,
             turn_detection="vad",  # Use the simpler, faster, and stable VAD-based turn detection
-            user_away_timeout=60,
+            user_away_timeout=60
         )
         
         # Initialize our shared BusinessAgent with the instructions we just built
@@ -195,12 +195,13 @@ async def request_fnc(req: JobRequest):
 # v-- THIS ENTIRE FUNCTION IS NEW --v
 def prewarm(proc: agents.JobProcess):
     # This function is called once when a new job process starts.
-    # We load environment variables and our stable, local VAD model here.
+    # We load environment variables and initialize our stable clients and models here.
     load_dotenv()
     logging.info("Prewarm: Environment variables loaded into child process.")
     
     proc.userdata["vad"] = silero.VAD.load()
-    logging.info("Prewarm complete: VAD model loaded.")
+    proc.userdata["tts"] = cartesia.TTS(model="sonic-english")
+    logging.info("Prewarm complete for cloud agent: VAD model and TTS client initialized.")
 # ^-- THIS ENTIRE FUNCTION IS NEW --^
 
 if __name__ == "__main__":
