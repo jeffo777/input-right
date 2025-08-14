@@ -73,18 +73,26 @@ Open your browser to `http://localhost:3000` (or the port specified by the front
 
 ### Why Chat To Form?
 In a world of unreliable AI and tedious web forms, Chat To Form provides a new, more human way to capture structured data. It's built on a simple, powerful principle: conversational interaction with guaranteed data accuracy.
+
 Purely voice-based AI is fast, but prone to transcription errors that corrupt critical data. Traditional web forms are accurate, but can be slow, inconvenient, and inaccessible for many users.
+
 Chat To Form is the bridge between these two worlds. It enables a fast and natural voice conversation to reliably populate any kind of structured form, from simple contact requests to complex applications.
+
 Voice-First Input: The primary interaction is a natural, spoken conversation, eliminating the need for typing.
+
 The Certainty of Sight: The agent's understanding is instantly presented back to the user in a clean, simple form. The user can then verify the data, make corrections via text input, or simply tell the agent what to change, creating a seamless loop of conversational editing.
+
 User-Verified for 100% Accuracy: Because the user sees the form and gives final approval, the submitted data is guaranteed to be exactly what they intended, eliminating costly transcription errors.
+
 Connect to Anything: The open-source agent sends captured data to a configurable webhook, allowing you to easily connect it to any CRM, database, or workflow tool like Zapier or Make.com.
+
 Extensible Platform: The underlying architecture is built on LiveKit and is designed to be extended with powerful multimodal capabilities.
 This makes Chat To Form the perfect tool for any workflow where data accuracy is paramount:
 Lead Capture: For contractors, law firms, and any business where a new lead is the lifeblood of the company.
 Patient Intake: For healthcare providers who need accurate insurance and medical history information.
 Customer Support: For gathering detailed issue reports or processing returns.
 Financial Applications: For any process that involves capturing sensitive financial data.
+
 This project was born from 20 years of experience as a contractor, where the pain of losing a customer due to a single digit typo in a phone number was a constant source of anxiety. Chat To Form is the reliable, trustworthy solution for any business that needs to turn conversations into clean, actionable data.
 
 ### ️ How It Works
