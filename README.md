@@ -1,6 +1,6 @@
 # Chat To Form
 
-**Chat To Form is an open-source AI agent that turns voice conversations into verified, structured data.**
+**Chat To Form is an open-source platform that lets you deploy voice agents that turn conversations into perfectly accurate, verified , structured data.**
 
 This repository contains the code for a complete, production-ready platform that allows you to deploy voice-enabled AI receptionists that can answer questions and reliably capture information from users.
 
