@@ -16,8 +16,8 @@ Get the complete open-source kit running on your local machine in under 5 minute
 ### 1. Clone the Repository:
 
 ```bash
-git clone https://github.com/jeffo777/ContractorLeadsBot.git
-cd ContractorLeadsBot
+git clone https://github.com/jeffo777/chat-to-form.git
+cd chat-to-form
 ```
 ### 2. Configure the Open-Source Kit:
 Navigate to `apps/open-source/agent/`. Copy `.env.example` to a new file named `.env` and add your API keys and a webhook URL (you can get a free one from `Webhook.site`).
