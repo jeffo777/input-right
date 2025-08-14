@@ -15,7 +15,6 @@ from livekit import agents, rtc
 from livekit.agents import JobRequest, UserStateChangedEvent
 from livekit.agents import tts
 from livekit.plugins import deepgram, groq, silero, cartesia
-from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -53,23 +52,22 @@ async def entrypoint(ctx: agents.JobContext):
         await ctx.connect()
         logging.info("Agent connected to the room.")
 
-                        # All model initialization and session logic is now safely inside the try block
+                                                # All model initialization and session logic is now safely inside the try block
         stt = deepgram.STT()
         llm = groq.LLM(model="llama-3.3-70b-versatile")
         
-        # Use the pre-warmed TTS client from userdata
-        tts = ctx.proc.userdata["tts"]
+        # Use the pre-warmed VAD model from userdata
+        vad = ctx.proc.userdata["vad"]
         
-        # Load heavy, context-aware models just-in-time inside the entrypoint
-        vad = silero.VAD.load()
-        turn = MultilingualModel()
+        # Use the pre-warmed TTS client from the prewarm function
+        tts = ctx.proc.userdata["tts"]
 
         session = agents.AgentSession(
             stt=stt,
             llm=llm,
             tts=tts,
             vad=vad,
-            turn_detection=turn,
+            turn_detection="vad",  # Use the simpler, faster, and stable VAD-based turn detection
             user_away_timeout=60,  # Wait for 60 seconds of silence before ending
         )
         agent = BusinessAgent(instructions=instructions)
@@ -140,9 +138,12 @@ async def request_fnc(req: JobRequest):
 
 def prewarm(proc: agents.JobProcess):
     # This function is called once when a new job process starts.
-    # We load environment variables and initialize lightweight, non-context-aware clients here.
+    # We load environment variables and our stable, local VAD model here.
     load_dotenv()
     logging.info("Prewarm: Environment variables loaded into child process.")
+    
+    proc.userdata["vad"] = silero.VAD.load()
+    logging.info("Prewarm complete: VAD model loaded.")
     
     proc.userdata["tts"] = cartesia.TTS(model="sonic-english")
     logging.info("Prewarm complete: Cartesia TTS client initialized.")
