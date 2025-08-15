@@ -1,0 +1,45 @@
+[33mc89fdd8[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m fix(open-source): Add missing requirements.lock for token-server
+[33m2bcb581[m[33m ([m[1;33mtag: [m[1;33mv2.2.3[m[33m)[m docs(project): Add all launch documentation and license files
+[33m64228c8[m[33m ([m[1;33mtag: [m[1;33mv2.2.2[m[33m)[m chore(open-source): Add dependency lock file for stable installs
+[33m5212732[m fix(docs): Correct filename for open-source .env.example
+[33ma80056c[m Merge branch 'main' of https://github.com/jeffo777/input-right
+[33me5a8d17[m[33m ([m[1;33mtag: [m[1;33mv2.2.0[m[33m)[m chore(open-source): Finalize and centralize .env configuration
+[33m443a5ee[m Update README.md
+[33m6f87e18[m docs(open-source): Add missing .env.example for agent
+[33m8945d36[m[33m ([m[1;33mtag: [m[1;33mv2.1.0[m[33m)[m chore(project): Rebrand from Chat To Form to InputRight
+[33mff231c1[m Update README.md
+[33m0045660[m Update NOTICE
+[33m18a01cd[m Update LICENSE
+[33m2e5c69b[m Update README.md
+[33m932cd7a[m Update README.md
+[33m9d55d76[m chore(github): Add issue templates for bugs and features
+[33ma194b0f[m chore(project): Add comprehensive root .gitignore file
+[33m3f5feb7[m docs(project): Add CONTRIBUTING.md guide, licence, notice
+[33m3098441[m[33m ([m[1;33mtag: [m[1;33mv2.0.1[m[33m)[m chore(platform): Stabilize cloud agent and align all apps
+[33m22b150b[m[33m ([m[1;33mtag: [m[1;33mv2.0.0[m[33m)[m feat(app): Complete monorepo refactor and stabilize open-source kit
+[33m829c7e7[m[33m ([m[1;33mtag: [m[1;33mv1.4.1[m[33m)[m fix(agent): Stabilize model loading and enhance prompt logic
+[33md954d93[m refactor(agent): Enhance prompt to handle follow-up call scenarios
+[33m7509dbe[m refactor(agent): Improve prompt for more natural, conversational turn-taking
+[33m83ab0f8[m[33m ([m[1;33mtag: [m[1;33mv1.4.0[m[33m)[m fix(agent): Finalize and stabilize open-source agent
+[33m2249631[m[33m ([m[1;33mtag: [m[1;33mv1.3.0[m[33m)[m feat(app): Build and stabilize complete open-source kit
+[33mebe6fb0[m feat(app): Build complete, standalone open-source application kit
+[33m465166e[m[33m ([m[1;33mtag: [m[1;33mv1.2.1[m[33m)[m fix(app): Resolve agent startup errors and TTS failures
+[33m8998368[m[33m ([m[1;33mtag: [m[1;33mv1.2.0[m[33m)[m refactor(app): Restructure project into a monorepo for open-core model
+[33m6e84d49[m[33m ([m[1;33mtag: [m[1;33mv1.1.1[m[33m)[m feat(agent): Externalize agent prompt to a template file
+[33mf67e103[m[33m ([m[1;33mtag: [m[1;33mv1.1.0[m[33m)[m refactor(app): Rename 'contractor' to 'business' across the entire stack
+[33mfa0643f[m[33m ([m[1;33mtag: [m[1;33mv1.0.1[m[33m)[m fix(agent): Fix RPC timeout and interruption on form submission
+[33m9cfd5e9[m[33m ([m[1;33mtag: [m[1;33mv1.0.0-mvp-stable[m[33m)[m feat(app): Achieve stable end-to-end MVP functionality
+[33m0ea2ac5[m[33m ([m[1;33mtag: [m[1;33mv0.4.0-lifecycle-stable[m[33m)[m refactor(app): Implement stable multi-call lifecycle
+[33mc1e1481[m[33m ([m[1;33mtag: [m[1;33mv0.3.0-form-display-fixed[m[33m)[m refactor(frontend): Implement LiveKitRoom architecture for stability and form details now populated - but submit form not yet working
+[33ma97f35a[m[33m ([m[1;33mtag: [m[1;33mv0.2.0-stable-agent[m[33m)[m fix(app): Resolve connection and agent startup lifecycle bugs - switch to Livekit architecture throughout to fix multiple issues
+[33me2cdfcb[m[33m ([m[1;33mtag: [m[1;33mv0.1.0-mvp[m[33m)[m feat(agent): Complete MVP with functional Groq TTS voice
+[33m0e69009[m feat: Implement and debug full lead capture workflow
+[33md93b548[m feat: Implement full lead capture and verification workflow
+[33mdb61732[m feat(frontend): Display and populate lead verification form
+[33m079db9c[m feat(frontend): Display and populate lead verification form
+[33m222d62b[m feat(agent): Add Silero VAD for improved responsiveness
+[33m98e2d42[m feat(agent): Establish stable two-way conversation
+[33m07e3e34[m fix(backend): Correct models and finalize initial migration
+[33mc856cb8[m feat(frontend): Fix connection race condition and verify E2E flow
+[33md5924ac[m feat: Achieve full end-to-end system connection
+[33m31b40bf[m feat: Initial project setup with working backend and frontend
