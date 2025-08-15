@@ -49,7 +49,7 @@ export function App({ appConfig, livekitUrl, apiUrl }: AppProps) {
     try {
       const payload = JSON.stringify(data);
       await room.localParticipant.performRpc({
-      destinationIdentity: "chat-to-form-agent", // Corrected agent identity
+      destinationIdentity: "input-right-agent", // Corrected agent identity
         method: "submit_lead_form",
         payload: payload,
       });

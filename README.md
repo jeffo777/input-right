@@ -1,6 +1,6 @@
-# Chat To Form
+# InputRight
 
-**Chat To Form is an open-source platform that lets you deploy voice agents that turn conversations into perfectly accurate, verified , structured data.**
+**InputRight is an open-source platform that lets you deploy voice agents that turn conversations into perfectly accurate, verified , structured data.**
 
 This repository contains the code for a complete, production-ready platform that allows you to deploy voice-enabled AI receptionists that can answer questions and reliably capture information from users.
 
@@ -10,10 +10,10 @@ This repository contains the code for a complete, production-ready platform that
 
 This project follows a modern open-core model, providing two distinct editions:
 
-*   **Chat To Form (Open Source):** The free, self-hostable core engine. Perfect for developers who want to integrate a powerful voice-to-form agent into their own projects.
+*   **InputRight (Open Source):** The free, self-hostable core engine. Perfect for developers who want to integrate a powerful voice-to-form agent into their own projects.
     *   **[>> Get Started with the Open-Source Kit <<](./apps/open-source/README.md)**
 
-*   **Chat To Form (Cloud) - *Coming Soon!*** The fully-managed, multi-tenant SaaS platform. The easiest way to deploy a "Digital Receptionist" for your business with zero code and zero hassle.
+*   **InputRight (Cloud) - *Coming Soon!*** The fully-managed, multi-tenant SaaS platform. The easiest way to deploy a "Digital Receptionist" for your business with zero code and zero hassle.
     *   **Interested in early access? [Join our waitlist!](https://your-waitlist-url.com)**
 
 ---

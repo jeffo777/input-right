@@ -1,6 +1,6 @@
-# Contributing to Chat To Form
+# Contributing to InputRight
 
-First off, thank you for considering contributing to Chat To Form! We're excited to build a community around this project and welcome your help. Whether you're reporting a bug, suggesting a new feature, or just asking a question, your participation is valuable.
+First off, thank you for considering contributing to InputRight! We're excited to build a community around this project and welcome your help. Whether you're reporting a bug, suggesting a new feature, or just asking a question, your participation is valuable.
 
 ## How Can I Contribute?
 
@@ -29,6 +29,6 @@ To help us understand your idea, please include:
 
 ### 💬 Asking Questions
 
-If you have questions about how to use Chat To Form, how to configure it, or general ideas to discuss, the best place is our [GitHub Discussions page](https://github.com/jeffo777/chat-to-form/discussions). This is the central hub for our community conversations.
+If you have questions about how to use InputRight, how to configure it, or general ideas to discuss, the best place is our [GitHub Discussions page](https://github.com/jeffo777/chat-to-form/discussions). This is the central hub for our community conversations.
 
-Thank you again for your interest in Chat To Form!
+Thank you again for your interest in InputRight!

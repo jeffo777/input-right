@@ -1,6 +1,6 @@
-# Chat To Form (Open Source Kit)
+# InputRight (Open Source Kit)
 
-This directory contains the complete, self-hostable version of the Chat To Form agent. It's a full-stack application designed to be run locally or on your own infrastructure, providing a powerful voice-to-verified-form workflow.
+This directory contains the complete, self-hostable version of the InputRight agent. It's a full-stack application designed to be run locally or on your own infrastructure, providing a powerful voice-to-verified-form workflow.
 
 ---
 
@@ -71,12 +71,12 @@ python main.py dev
 ### 4. Start a Conversation:
 Open your browser to `http://localhost:3000` (or the port specified by the frontend server).
 
-### Why Chat To Form?
-In a world of unreliable AI and tedious web forms, Chat To Form provides a new, more human way to capture structured data. It's built on a simple, powerful principle: conversational interaction with guaranteed data accuracy.
+### Why InputRight?
+In a world of unreliable AI and tedious web forms, InputRight provides a new, more human way to capture structured data. It's built on a simple, powerful principle: conversational interaction with guaranteed data accuracy.
 
 Purely voice-based AI is fast, but prone to transcription errors that corrupt critical data. Traditional web forms are accurate, but can be slow, inconvenient, and inaccessible for many users.
 
-Chat To Form is the bridge between these two worlds. It enables a fast and natural voice conversation to reliably populate any kind of structured form, from simple contact requests to complex applications.
+InputRight is the bridge between these two worlds. It enables a fast and natural voice conversation to reliably populate any kind of structured form, from simple contact requests to complex applications.
 
 Voice-First Input: The primary interaction is a natural, spoken conversation, eliminating the need for typing.
 
@@ -87,16 +87,16 @@ User-Verified for 100% Accuracy: Because the user sees the form and gives final 
 Connect to Anything: The open-source agent sends captured data to a configurable webhook, allowing you to easily connect it to any CRM, database, or workflow tool like Zapier or Make.com.
 
 Extensible Platform: The underlying architecture is built on LiveKit and is designed to be extended with powerful multimodal capabilities.
-This makes Chat To Form the perfect tool for any workflow where data accuracy is paramount:
+This makes InputRight the perfect tool for any workflow where data accuracy is paramount:
 Lead Capture: For contractors, law firms, and any business where a new lead is the lifeblood of the company.
 Patient Intake: For healthcare providers who need accurate insurance and medical history information.
 Customer Support: For gathering detailed issue reports or processing returns.
 Financial Applications: For any process that involves capturing sensitive financial data.
 
-This project was born from 20 years of experience as a contractor, where the pain of losing a customer due to a single digit typo in a phone number was a constant source of anxiety. Chat To Form is the reliable, trustworthy solution for any business that needs to turn conversations into clean, actionable data.
+This project was born from 20 years of experience as a contractor, where the pain of losing a customer due to a single digit typo in a phone number was a constant source of anxiety. InputRight is the reliable, trustworthy solution for any business that needs to turn conversations into clean, actionable data.
 
 ### ️ How It Works
-Chat To Form uses a three-part architecture to provide a robust, real-time experience.
+InputRight uses a three-part architecture to provide a robust, real-time experience.
 ```mermaid
 graph TD
     A[User Speaks on Frontend] --> B{LiveKit Cloud};

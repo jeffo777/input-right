@@ -134,7 +134,7 @@ async def entrypoint(ctx: agents.JobContext):
 
 async def request_fnc(req: JobRequest):
     logging.info(f"Accepting job {req.job.id} for open-source agent")
-    await req.accept(identity="chat-to-form-agent")
+    await req.accept(identity="input-right-agent")
 
 def prewarm(proc: agents.JobProcess):
     # This function is called once when a new job process starts.
@@ -149,7 +149,7 @@ def prewarm(proc: agents.JobProcess):
     logging.info("Prewarm complete: Cartesia TTS client initialized.")
 
 if __name__ == "__main__":
-    logging.info("Starting Chat To Form (Open Source) Agent Worker...")
+    logging.info("Starting InputRight (Open Source) Agent Worker...")
     agents.cli.run_app(
         agents.WorkerOptions(
             request_fnc=request_fnc,
