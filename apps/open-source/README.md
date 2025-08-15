@@ -20,7 +20,9 @@ git clone https://github.com/jeffo777/chat-to-form.git
 cd chat-to-form
 ```
 ### 2. Configure the Open-Source Kit:
-Navigate to `apps/open-source/agent/`. Copy `.env.example` to a new file named `.env` and add your API keys and a webhook URL (you can get a free one from `Webhook.site`).
+Navigate to the `apps/open-source` directory. Copy the `.env.example` file in this directory to a new file named `.env`.
+
+Open your new `.env` file and add your API keys and a webhook URL (you can get a free one from [Webhook.site](https://webhook.site/)). This single configuration file is used by all components of the open-source kit (Token Server and Agent).
 
 ### 3. Run the Application (in 3 separate terminals):
 #### Terminal 1: Start the Token Server
