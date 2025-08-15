@@ -36,8 +36,8 @@ python -m venv venv
 # On Mac/Linux:
 # source venv/bin/activate
 
-# Install dependencies and run
-pip install -r requirements.txt
+# Install exact dependencies from the lock file for a stable build
+pip install -r requirements.lock
 uvicorn main:app --port 8002
 ```
 #### Terminal 2: Start the Frontend
