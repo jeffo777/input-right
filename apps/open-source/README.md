@@ -48,12 +48,12 @@ cd apps/open-source/token-server
 # Create and activate a virtual environment
 python -m venv venv
 # On Windows:
-.venvScriptsactivate
+.\venv\Scripts\activate
 # On Mac/Linux:
 # source venv/bin/activate
 
 # Install dependencies and run
-pip install -r requirements.txt
+pip install -r requirements.lock
 uvicorn main:app --port 8002
 ```
 
@@ -72,18 +72,18 @@ cd apps/open-source/agent
 # Create and activate a virtual environment
 python -m venv venv
 # On Windows:
-.venvScriptsactivate
+.\venv\Scripts\activate
 # On Mac/Linux:
 # source venv/bin/activate
 
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies from the lock file
+pip install -r requirements.lock
 
-# Install the local core-agent package
-# On Windows:
-pip install -e ......packagescore-agent
-# On Mac/Linux:
-# pip install -e ../../../packages/core-agent
+# Install the shared core-agent package
+# (This is a multi-step command to ensure it works on all platforms)
+cd ..\..\..\packages\core-agent
+pip install -e .
+cd ..\..\apps\open-source\agent
 
 # Run the agent
 python main.py dev

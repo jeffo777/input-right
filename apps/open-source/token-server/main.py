@@ -7,9 +7,8 @@ from pydantic import BaseModel
 from livekit import api
 from dotenv import load_dotenv
 
-# Load environment variables from the .env file in the parent directory
-dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
-load_dotenv(dotenv_path=dotenv_path)
+# Load environment variables from the .env file in the current directory
+load_dotenv()
 
 LIVEKIT_API_KEY = os.getenv("LIVEKIT_API_KEY")
 LIVEKIT_API_SECRET = os.getenv("LIVEKIT_API_SECRET")
