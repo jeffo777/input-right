@@ -18,7 +18,6 @@ class BusinessAgent(agents.Agent):
     async def present_verification_form(self, name: str, inquiry: str, email: str, phone: str | None = None):
         """
                 
-        Call this tool ONLY when you have collected the users name, inquiry, and email.
         This tool is SILENT and simply displays a form on the users screen.
         After you call this tool and it returns a success message, your NEXT conversational turn
         MUST be to verbally instruct the user to check the form on their screen and click send.
