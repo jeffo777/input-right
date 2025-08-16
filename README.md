@@ -50,3 +50,11 @@ Our core mission is to provide the most reliable way to turn conversations into 
 ##  Getting Started
 
 To get started with the open-source version, please see the detailed instructions in the [`apps/open-source/README.md`](./apps/open-source/README.md) file.
+
+---
+
+## 🔒 Security and Compliance Disclaimer
+
+The open-source version of InputRight is provided as-is and is **NOT** compliant with regulations such as HIPAA or PCI DSS out of the box. You are solely responsible for ensuring that your implementation, configuration, and hosting environment meet any and all legal and regulatory requirements for your specific use case.
+
+The upcoming **InputRight Cloud** service will offer enterprise-grade security and compliance features for regulated industries.
