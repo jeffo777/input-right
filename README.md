@@ -18,7 +18,7 @@ This project follows a modern open-core model, providing two distinct editions:
     *   **[>> Get Started with the Open-Source Kit <<](./apps/open-source/README.md)**
 
 *   **InputRight (Cloud) - *Coming Soon!*** The fully-managed, multi-tenant SaaS platform. The easiest way to deploy a "Digital Receptionist" for your business with zero code and zero hassle.
-    *   **Interested in early access? [Join our waitlist!](https://your-waitlist-url.com)**
+    *   **Interested in early access? [Join our waitlist!](https://inputright.com/)**
 
 ---
 
