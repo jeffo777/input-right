@@ -6,6 +6,10 @@ This repository contains the code for a complete, production-ready platform that
 
 ---
 
+[![InputRight Demo Video](./.github/assets/demo-thumbnail.png)](https://www.youtube.com/watch?v=unc9YS0cvdg)
+
+---
+
 ##  The Open Core Model
 
 This project follows a modern open-core model, providing two distinct editions:

@@ -4,6 +4,10 @@ This directory contains the complete, self-hostable version of the InputRight pl
 
 ---
 
+[![InputRight Demo Video](./.github/assets/demo-thumbnail.png)](https://www.youtube.com/watch?v=unc9YS0cvdg)
+
+---
+
 ## 🚀 Quick Start
 
 Get the complete open-source kit running on your local machine in under 5 minutes.
