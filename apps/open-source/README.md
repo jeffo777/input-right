@@ -159,6 +159,8 @@ This project would not be possible without the incredible open-source work of ot
 *   [LiveKit](https://livekit.io/): For providing the powerful, real-time WebRTC infrastructure that powers all communication.
 *   [LiveKit Agent Starter - React](https://github.com/livekit-examples/agent-starter-react): For providing the excellent, open-source frontend template that we used as a starting point for our user interface.
 
+---
+
 ## 💬 Community & Support
 
 Join our community on Discord to ask questions, share what you've built, and connect with the team!
