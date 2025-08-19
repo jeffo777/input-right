@@ -150,7 +150,7 @@ This includes, but is not limited to, signing Business Associate Agreements (BAA
 
 ## 🤝 Contributing
 
-We welcome contributions from the community! Whether it's reporting a bug, suggesting a feature, or submitting a pull request, your help is greatly appreciated. Please see our main [Contributing Guide](../../CONTRIBUTING.md) to get started.
+We welcome contributions from the community! Whether it's reporting a bug, suggesting a feature, or submitting a pull request, your help is greatly appreciated. Please see our main [Contributing Guide](../../../CONTRIBUTING.md) to get started.
 
 ## 🙏 Acknowledgements
 
