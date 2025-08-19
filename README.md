@@ -57,6 +57,14 @@ To get started with the open-source version, please see the detailed instruction
 
 ---
 
+## 💬 Community & Support
+
+Join our community on Discord to ask questions, share what you've built, and connect with the team!
+
+*   **[>> Join the InputRight Discord Server <<](https://discord.gg/btqHQek3Pr)**
+
+---
+
 ## 🔒 Security and Compliance Disclaimer
 
 The open-source version of InputRight is provided as-is and is **NOT** compliant with regulations such as HIPAA or PCI DSS out of the box. You are solely responsible for ensuring that your implementation, configuration, and hosting environment meet any and all legal and regulatory requirements for your specific use case.
