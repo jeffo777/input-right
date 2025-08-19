@@ -138,8 +138,6 @@ graph TD
     G -- RPC --> H[Agent: submit_lead_form];
     H -- POST Request --> I[Your Webhook URL];
 
----
-
 ## 🔒 Security and Compliance Disclaimer
 
 This software is provided as-is and is **NOT** compliant with regulations such as HIPAA or PCI DSS out of the box. You are solely responsible for ensuring that your implementation, configuration, choice of AI providers, and hosting environment meet any and all legal and regulatory requirements for your specific use case.
