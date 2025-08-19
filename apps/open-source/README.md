@@ -123,7 +123,7 @@ This project was born from 20 years of experience as a contractor, where the pai
 
 ---
 
-### How It Workss
+### How It Works
 
 InputRight uses a three-part architecture to provide a robust, real-time experience.
 
