@@ -29,6 +29,6 @@ To help us understand your idea, please include:
 
 ### 💬 Asking Questions
 
-If you have questions about how to use InputRight, how to configure it, or general ideas to discuss, the best place is our [GitHub Discussions page](https://github.com/jeffo777/chat-to-form/discussions). This is the central hub for our community conversations.
+If you have questions about how to use InputRight, how to configure it, or general ideas to discuss, the best place is our [Discord community page](https://discord.gg/7SxCMurnE8). This is the central hub for our community conversations.
 
 Thank you again for your interest in InputRight!
