@@ -4,6 +4,8 @@
 
 This repository contains the code for a complete, production-ready platform that allows you to deploy voice-enabled AI receptionists that can answer questions and reliably capture information from users.
 
+**NOTE:** **InputRight was created by an AI CTO Working with an AI software engineer which provided instructions to Gemini CLI.** although The open source code is tested and working **Please ensure you check the code yourself before using for any production use cases.**
+
 ---
 
 [![InputRight Demo Video](./.github/assets/demo-thumbnail.png)](https://www.youtube.com/watch?v=unc9YS0cvdg)
