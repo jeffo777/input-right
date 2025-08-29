@@ -2,7 +2,7 @@
 
 **InputRight is an open-source platform that lets you deploy voice agents that turn conversations into perfectly accurate, verified , structured data.**
 
-This repository contains the code for a complete, production-ready platform that allows you to deploy voice-enabled AI receptionists that can answer questions and reliably capture information from users.
+This repository contains the code for a complete, voice AI platform that allows you to deploy voice-enabled AI receptionists that can answer questions and reliably capture information from users.
 
 **NOTE:** **InputRight was created by an AI CTO Working with an AI software engineer which provided instructions to Gemini CLI.** Although the open source code is tested and working **Please ensure you check the code yourself before using for any production use cases.**
 
