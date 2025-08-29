@@ -2,7 +2,7 @@
 
 This directory contains the complete, self-hostable version of the InputRight platform. It's a full-stack application designed to be run locally or on your own infrastructure, providing a powerful voice-to-verified-form workflow.
 
-**NOTE:** **InputRight was created by an AI CTO Working with an AI software engineer which provided instructions to Gemini CLI.** although The open source code is tested and working **Please ensure you check the code yourself before using for any production use cases.**
+**NOTE:** **InputRight was created by an AI CTO Working with an AI software engineer which provided instructions to Gemini CLI.** Although the open source code is tested and working **Please ensure you check the code yourself before using for any production use cases.**
 
 ---
 
